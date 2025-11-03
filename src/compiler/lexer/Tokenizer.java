@@ -254,6 +254,7 @@ public class Tokenizer {
             case "while": tokens.add(new TokenKwWhile()); break;
             case "func": tokens.add(new TokenKwFnDecl()); break;
             case "return": tokens.add(new TokenKwReturn()); break;
+            case "result": tokens.add(new TokenKwResult()); break;
 
             default: tokens.add(new TokenIdentifier(text)); break;
         }

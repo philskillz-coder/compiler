@@ -13,7 +13,7 @@ public class Print extends FunctionDeclNode {
                         new IdentifierNode("string"),
                         new IdentifierNode("text")
                 )),
-                new VirtualBlock() {
+                new VirtualBlockExpr() {
                     @Override
                     public Object execute(Environment env) {
                         System.out.println(env.getVar("text"));

@@ -24,7 +24,17 @@ public abstract class ASTBaseVisitor<R> implements ASTVisitor<R> {
     public R visitFunctionDecl(FunctionDeclNode node) { return null; }
 
     @Override
+    public R visitBlockExpr(BlockExpr node) {
+        return null;
+    }
+
+    @Override
     public R visitBlockStmt(BlockStmt node) {
+        return null;
+    }
+
+    @Override
+    public R visitResult(ResultStmtNode node) {
         return null;
     }
 

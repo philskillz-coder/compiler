@@ -7,15 +7,15 @@ import java.util.List;
 public class FunctionDeclNode extends Stmt {
     public final IdentifierNode name;
     public final List<VariableDeclNode> parameters;
-    public final BlockStmt body;
+    public final Stmt body;
     public final IdentifierNode returnType;
     public final boolean isBuiltin;
 
-    public FunctionDeclNode(IdentifierNode name, List<VariableDeclNode> parameters, BlockStmt body, IdentifierNode returnType) {
+    public FunctionDeclNode(IdentifierNode name, List<VariableDeclNode> parameters, Stmt body, IdentifierNode returnType) {
         this(name, parameters, body, returnType, false);
     }
 
-    public FunctionDeclNode(IdentifierNode name, List<VariableDeclNode> parameters, BlockStmt body, IdentifierNode returnType, boolean isBuiltin) {
+    public FunctionDeclNode(IdentifierNode name, List<VariableDeclNode> parameters, Stmt body, IdentifierNode returnType, boolean isBuiltin) {
         this.name = name;
         this.parameters = parameters;
         this.body = body;

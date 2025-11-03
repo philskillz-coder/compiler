@@ -17,10 +17,12 @@ public interface ASTVisitor<R> {
     R visitIfStmt(IfStmtNode node);
     R visitWhileStmt(WhileStmtNode node);
 
+    R visitBlockExpr(BlockExpr node);
     R visitBlockStmt(BlockStmt node);
     R visitFunctionDecl(FunctionDeclNode node);
     R visitFunctionCall(FunctionCallNode node);
     R visitReturn(ReturnStmtNode node);
+    R visitResult(ResultStmtNode node);
     R visitExprStmt(ExprStmtNode node);
     R visitIdentifierNode(IdentifierNode node);
 }

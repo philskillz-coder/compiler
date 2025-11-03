@@ -21,23 +21,21 @@ public class TreeBuilder {
         consume(TokenType.SOF);
         List<Stmt> declarations = new ArrayList<>();
 
-        // Parsen Sie alle Deklarationen und globalen Anweisungen, bis das Ende erreicht ist
         while (!isAtEnd()) {
             declarations.add(parseDeclaration());
         }
 
-        // Annahme: ProgramNode ist Ihr AST-Wurzelknoten
         return new ProgramNode(declarations);
     }
 
     private Stmt parseDeclaration() {
-        // 1. Funktion (func)
         if (match(TokenType.KW_FUNC)) {
             return parseFunctionDeclaration(); // Gibt FunctionDeclNode zurück
         }
         if (match(TokenType.KW_VAR)) {
             return parseVariableDeclaration();
         }
+        // todo: class
 
         // Wenn es keine Deklaration ist, muss es eine Anweisung sein,
         return parseStatement();
@@ -47,15 +45,23 @@ public class TreeBuilder {
         if (match(TokenType.KW_IF)) return parseIfStatement();
         if (match(TokenType.KW_WHILE)) return parseWhileStatement();
         if (match(TokenType.KW_RETURN)) return parseReturnStatement();
-        if (match(TokenType.CURLY_OPEN)) return parseBlockStatement();
+        if (match(TokenType.KW_RESULT)) return parseResultStatement();
 
         // Falls es kein Statement ist, behandle es als Anweisung
         return parseExpressionStatement();
     }
 
+    private Stmt parseBody() {
+        if (match(TokenType.CURLY_OPEN)) {
+            return parseBlockStatement();
+        }
+
+        return parseStatement();
+    }
+
     private ExprStmtNode parseExpressionStatement() {
         Expr expr = parseExpression();
-        consume(TokenType.SEMICOLON);
+        consume(TokenType.SEMICOLON, "Expected semicolon after expression.");
 
         return new ExprStmtNode(expr);
     }
@@ -67,53 +73,72 @@ public class TreeBuilder {
             nodes.add(parseDeclaration());
         }
 
-        consume(TokenType.CURLY_CLOSE);
+        consume(TokenType.CURLY_CLOSE, "Expected closing bracket for block statement.");
 
         return new BlockStmt(nodes);
     }
 
+    private BlockExpr parseBlockExpression() {
+        List<Stmt> nodes = new ArrayList<>();
+
+        while (!peekMatch(TokenType.CURLY_CLOSE) && !isAtEnd()) {
+            nodes.add(parseDeclaration());
+        }
+
+        consume(TokenType.CURLY_CLOSE, "Expected closing bracket for block expression.");
+
+        return new BlockExpr(nodes);
+    }
+
+
     private FunctionDeclNode parseFunctionDeclaration() {
-        // 1. Funktionsname
+        Token<?> returnTypeIdentifier = consume(TokenType.IDENTIFIER);
         Token<?> nameToken = consume(TokenType.IDENTIFIER);
 
-        // 2. Parameter-Liste
-        consume(TokenType.PAREN_OPEN);
+        consume(TokenType.PAREN_OPEN, "Expected opening parenthesis after function name declaration.");
         List<VariableDeclNode> parameters = new ArrayList<>();
 
         while (!peekMatch(TokenType.PAREN_CLOSE) && !isAtEnd()) {
-            VariableDeclNode par = parseVariableDeclaration();
-            parameters.add(par);
+            VariableDeclNode formalParameter = parseVariableCore();
+            parameters.add(formalParameter);
 
             if (!peekMatch(TokenType.PAREN_CLOSE)) {
-                consume(TokenType.COMMA);
+                consume(TokenType.COMMA, "Expected comma after function parameter declaration.");
             }
         }
 
         consume(TokenType.PAREN_CLOSE);
-        // 3. Rückgabetyp (optional, hier ausgelassen)
-        // todo
 
-        // 4. Funktionskörper (Body)
         consume(TokenType.CURLY_OPEN);
-        BlockStmt body = parseBlockStatement();
+        Stmt body = parseBody();
 
-        // Annahme: Sie haben einen Konstruktor, der Name, Parameter und Body annimmt
-        return new FunctionDeclNode(new IdentifierNode(nameToken.getValue().toString()), parameters, body, new IdentifierNode("void"));
+        return new FunctionDeclNode(new IdentifierNode(nameToken.getValue().toString()), parameters, body, new IdentifierNode(returnTypeIdentifier.getValue().toString()));
     }
 
-    private VariableDeclNode parseVariableDeclaration() {
-        String type = "any"; // todo: ???
+    // Parst nur den Typ und Namen einer Variablen (oder eines Parameters)
+    private VariableDeclNode parseVariableCore() {
+        Token<?> typeToken = consume(TokenType.IDENTIFIER);
+        IdentifierNode typeIdentifierNode = new IdentifierNode(typeToken.getValue().toString());
+
         Token<?> nameToken = consume(TokenType.IDENTIFIER);
-        String name = nameToken.getValue().toString();
+        IdentifierNode nameNode = new IdentifierNode(nameToken.getValue().toString());
 
-        if (match(TokenType.OP_ASSIGN)) { // definition
+        return new VariableDeclNode(typeIdentifierNode, nameNode);
+    }
+
+    // [var] TypeRef name
+    private VariableDeclNode parseVariableDeclaration() {
+        VariableDeclNode decl = parseVariableCore();
+
+        if (match(TokenType.OP_ASSIGN)) {
             Expr initialValue = parseExpression();
-            consume(TokenType.SEMICOLON);
+            consume(TokenType.SEMICOLON, "Erwarte ';' nach der Variablendefinition.");
 
-            return new VariableDefNode(new IdentifierNode(type), new IdentifierNode(name), initialValue);
-        } else { // declaration
-            consume(TokenType.SEMICOLON);
-            return new VariableDeclNode(new IdentifierNode(type), new IdentifierNode(name));
+            return new VariableDefNode(decl.typeIdentifier, decl.name, initialValue);
+
+        } else { // Einfache Deklaration
+            consume(TokenType.SEMICOLON, "Erwarte ';' nach der Variablendeklaration.");
+            return decl;
         }
     }
 
@@ -124,7 +149,7 @@ public class TreeBuilder {
         consume(TokenType.PAREN_CLOSE);
 
         // 2. Den "Then"-Körper parsen (kann Block oder Einzel-Statement sein)
-        Stmt thenBranch = parseStatement();
+        Stmt thenBranch = parseBody();
         Stmt elseBranch = null;
 
         if (peekMatch(TokenType.KW_ELSE)) {
@@ -139,7 +164,7 @@ public class TreeBuilder {
 
             } else {
                 // Standard 'else' Body
-                elseBranch = parseStatement();
+                elseBranch = parseBody();
             }
         }
 
@@ -151,12 +176,23 @@ public class TreeBuilder {
         consume(TokenType.PAREN_OPEN);
         Expr cond = parseExpression();
         consume(TokenType.PAREN_CLOSE);
-        Stmt body = parseStatement();
+        Stmt body = parseBody();
 
         return new WhileStmtNode(cond, body);
     }
 
     private ReturnStmtNode parseReturnStatement() {
+        Expr expr = null;
+        if (!peekMatch(TokenType.SEMICOLON)) {
+            expr = parseExpression();
+        }
+
+        consume(TokenType.SEMICOLON, "Erwarte ';' nach dem 'return'-Statement.");
+
+        return new ReturnStmtNode(expr);
+    }
+
+    private ResultStmtNode parseResultStatement() {
         Expr expr;
         if (peek().getType() == TokenType.SEMICOLON) {
             expr = null;
@@ -166,7 +202,7 @@ public class TreeBuilder {
 
         consume(TokenType.SEMICOLON);
 
-        return new ReturnStmtNode(expr);
+        return new ResultStmtNode(expr);
     }
 
     /*
@@ -411,10 +447,6 @@ public class TreeBuilder {
 
     // 11. Primär: Literal, Variablen, Klammern
     private Expr parsePrimary() {
-
-
-        // --- LITERALE ---
-
         if (match(TokenType.INT_LITERAL)) {
             // Holen des generischen Tokens, um auf den Wert zuzugreifen
             Token<?> token = tokens.get(current - 1);
@@ -434,15 +466,11 @@ public class TreeBuilder {
             return new LiteralStringNode((String) token.getValue());
         }
 
-        // --- BEZEICHNER ---
-
         if (match(TokenType.IDENTIFIER)) {
             Token<?> token = tokens.get(current - 1);
             // Casten auf String (Bezeichner-Name)
             return new IdentifierNode((String) token.getValue());
         }
-
-        // --- GEKLAMMERTE AUSDRÜCKE ---
 
         if (match(TokenType.PAREN_OPEN)) {
             Expr expr = parseExpression();
@@ -450,8 +478,9 @@ public class TreeBuilder {
             return expr;
         }
 
-        // --- SCHLÜSSELWÖRTER (Booleans/Null, falls implementiert) ---
-        // ...
+        if (match(TokenType.CURLY_OPEN)) {
+            return parseBlockExpression();
+        }
 
         throw new ParseException("Unerwartetes Token:" + "(current=" + current + ")" + " Erwartete ein Literal, Bezeichner oder '('.: " + peek().toString());
     }
@@ -481,11 +510,24 @@ public class TreeBuilder {
     }
 
     private Token<?> consume(TokenType expectedType) {
+        return consume(expectedType, null);
+    }
+
+    private Token<?> consume(TokenType expectedType, String errorMessage) {
         if (peek().getType() != expectedType) {
-            throw new UnexpectedTypeException("Erwartete Token-Typ " + expectedType + "bei " + current +
-                    ", aber fand " + peek().getType());
+            String contextMessage = (errorMessage != null && !errorMessage.isEmpty()) ? errorMessage + " " : "";
+            String debugMessage = String.format(
+                    "Fehler bei Token %d: %sErwartete %s, fand aber %s.",
+                    current,
+                    contextMessage,
+                    expectedType,
+                    peek().getType()
+            );
+
+            throw new UnexpectedTypeException(debugMessage);
         }
-        return tokens.get(current++); // Liefert das Token und inkrementiert den Zeiger
+
+        return tokens.get(current++);
     }
 
     private boolean match(TokenType... types) {

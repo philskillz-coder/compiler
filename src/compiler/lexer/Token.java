@@ -232,3 +232,7 @@ class TokenKwFnDecl extends TokenKw {
 class TokenKwReturn extends TokenKw {
     public TokenKwReturn() {super("return", TokenType.KW_RETURN);}
 }
+
+class TokenKwResult extends TokenKw {
+    public TokenKwResult() { super("result", TokenType.KW_RESULT);}
+}

@@ -8,7 +8,8 @@ import java.util.List;
 
 public class Main {
     private final String CODE = ""+
-            "func fib(n;) { if (n == 0) { return 0; } else if (n == 1) { return 1; } else { return fib(n - 1) + fib(n - 2); } } print(fib(3));";
+//            "func int fib(int n) { if (n == 0) { return 0; } else if (n == 1) { return 1; } else { return fib(n - 1) + fib(n - 2); } } print(fib(3));";
+        "func void t() {return;}";
     // func
 
     public Main() {

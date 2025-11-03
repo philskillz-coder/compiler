@@ -62,6 +62,7 @@ public enum TokenType {
     KW_WHILE,           // while
     KW_FUNC,            // func
     KW_RETURN,          // return
+    KW_RESULT,          // result
 
     // VII. ZUSTANDS-MARKER
     EOF,                // End Of File

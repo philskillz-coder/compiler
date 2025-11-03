@@ -2,7 +2,7 @@ package compiler.ast;
 
 import compiler.visitors.ASTVisitor;
 
-public class ReturnStmtNode extends Stmt { // todo: expr or stmt
+public class ReturnStmtNode extends Stmt {
     public final Expr returnValue;
 
     public ReturnStmtNode(Expr returnValue) {
