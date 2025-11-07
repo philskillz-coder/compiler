@@ -90,7 +90,7 @@ public class TreeBuilder {
         return new BlockExpr(nodes);
     }
 
-
+    // todo: fix variable ref/ variable decl:
     private FunctionDeclNode parseFunctionDeclaration() {
         Token<?> returnTypeIdentifier = consume(TokenType.IDENTIFIER);
         Token<?> nameToken = consume(TokenType.IDENTIFIER);
@@ -109,7 +109,6 @@ public class TreeBuilder {
 
         consume(TokenType.PAREN_CLOSE);
 
-        consume(TokenType.CURLY_OPEN);
         Stmt body = parseBody();
 
         return new FunctionDeclNode(new IdentifierNode(nameToken.getValue().toString()), parameters, body, new IdentifierNode(returnTypeIdentifier.getValue().toString()));
