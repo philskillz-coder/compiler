@@ -20,7 +20,7 @@ public class FunctionDeclNode extends Stmt {
         this.parameters = parameters;
         this.body = body;
         this.returnType = returnType;
-        this.isBuiltin = isBuiltin; // <--- Initialisiert
+        this.isBuiltin = isBuiltin;
     }
 
     @Override

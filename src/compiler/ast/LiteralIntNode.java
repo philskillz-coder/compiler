@@ -11,6 +11,6 @@ public class LiteralIntNode extends LiteralNode {
 
     @Override
     public <R> R accept(ASTVisitor<R> visitor) {
-        return visitor.visitIntLiteral(this);
+        return visitor.visitLiteralInt(this);
     }
 }

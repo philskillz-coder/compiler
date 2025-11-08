@@ -7,7 +7,7 @@ import java.util.List;
 
 public class BlockStmt extends Stmt {
     public final List<Stmt> statements;
-    public Environment environment;
+//    public Environment environment;
 
     public BlockStmt() {
         this.statements = Collections.emptyList();

@@ -1,13 +1,29 @@
-package compiler.visitors;
+package compiler.visitors.eval;
 
 import compiler.ast.*;
 import compiler.ast.builtins.Print;
 import compiler.ast.builtins.VirtualBlockExpr;
+import compiler.visitors.ASTBaseVisitor;
+import compiler.visitors.eval.exceptions.EvalException;
 
 public class ASTEvalVisitor extends ASTBaseVisitor<Object> {
     private Environment globalEnv; // current scope
     private Environment env;
 
+    private enum EvalMode {
+        REFERENCE,
+        VALUE
+    }
+
+    private EvalMode nextMode = EvalMode.VALUE;
+
+    private void setEvalMode(EvalMode mode) {
+        this.nextMode = mode;
+    }
+
+    private void resetEvalMode() {
+        this.nextMode = EvalMode.VALUE;
+    }
 
     public ASTEvalVisitor() {
         this.globalEnv = new Environment();
@@ -28,17 +44,17 @@ public class ASTEvalVisitor extends ASTBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitIntLiteral(LiteralIntNode node) {
+    public Object visitLiteralInt(LiteralIntNode node) {
         return node.value;
     }
 
     @Override
-    public Object visitFloatLiteral(LiteralFloatNode node) {
+    public Object visitLiteralFloat(LiteralFloatNode node) {
         return node.value;
     }
 
     @Override
-    public Object visitStringLiteral(LiteralStringNode node) {
+    public Object visitLiteralString(LiteralStringNode node) {
         return node.value;
     }
 
@@ -63,8 +79,7 @@ public class ASTEvalVisitor extends ASTBaseVisitor<Object> {
                 case MUL: result = lhs * rhs; break;
                 case DIV:
                     if (rhs == 0) {
-                        System.err.println("Runtime error: division by zero.");
-                        return null; // Frühzeitiger Exit bei Fehler
+                        throw new EvalException("Runtime error: Division by zero.");
                     }
                     result = lhs / rhs;
                     break;
@@ -234,11 +249,21 @@ public class ASTEvalVisitor extends ASTBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitIdentifierNode(IdentifierNode node) {
-        if (env.varExists(node.identifier)) {
-            return env.getVar(node.identifier);
+    public Object visitIdentifier(IdentifierNode node) {
+        String name = node.identifier;
+
+        EvalMode currentMode = this.nextMode;
+        resetEvalMode();
+
+        if (currentMode == EvalMode.VALUE) {
+            // R-Value: Liefere den Wert
+            if (!env.varExists(name)) {
+                throw new EvalException("Undefined variable: " + name);
+            }
+            return env.getVar(name);
         } else {
-            return node.identifier;
+            // L-Value (Zuweisung): Liefere Namen
+            return name;
         }
     }
 
@@ -282,20 +307,14 @@ public class ASTEvalVisitor extends ASTBaseVisitor<Object> {
         return null;
     }
 
+    @Override
     public Object visitBlockStmt(BlockStmt node) {
-        Environment previous = env; // todo: see if this fits with function also creating env
-        env = new Environment(previous); // new local scope
-
         if (!(node instanceof VirtualBlockExpr)) {
-            try {
-                for (ASTNode stmt : node.statements) {
-                    if (stmt instanceof ReturnStmtNode || stmt instanceof ResultStmtNode) {
-                        return stmt.accept(this);
-                    }
-                    stmt.accept(this);
+            for (ASTNode stmt : node.statements) {
+                if (stmt instanceof ReturnStmtNode || stmt instanceof ResultStmtNode) {
+                    return stmt.accept(this);
                 }
-            } finally {
-                env = previous; // restore outer scope
+                stmt.accept(this);
             }
         } else {
             return ((VirtualBlockExpr) node).execute(env);
@@ -304,52 +323,54 @@ public class ASTEvalVisitor extends ASTBaseVisitor<Object> {
         return null;
     }
 
-
     @Override
     public Object visitFunctionDecl(FunctionDeclNode node) {
+        setEvalMode(EvalMode.REFERENCE);
         String name = (String) node.name.accept(this);
 
         if (env.assnExists(name)) {
-            System.err.println("Function or Variable named \"" + name + "\" already exists");
-            return null;
+            throw new EvalException("Function or variable named \"" + name + "\" already exists");
         }
 
         env.defineFunction(name, node);
         // Optional: you could store a snapshot of the current env in node.environment for closures
         // update function environment to reflect function parameters
-        if (node.body instanceof BlockStmt) ((BlockStmt) node.body).environment = env;
+//        if (node.body instanceof BlockStmt) ((BlockStmt) node.body).environment = env;
 
         return null;
     }
 
     @Override
     public Object visitFunctionCall(FunctionCallNode node) {
+        setEvalMode(EvalMode.REFERENCE);
         String name = (String) node.callee.accept(this);
 
         if (!env.functionExists(name)) {
-            System.err.println("Unknown function reference: <" + name + ">");
-            return null;
+            throw new EvalException("Function named \"" + name + "\" doesn't exist in this context!");
         }
 
         FunctionDeclNode fn = env.getFunction(name);
         // ensure parameters match
         if (node.parameters.size() != fn.parameters.size()) {
-            System.err.println("Parameter count does not match required parameters");
-            return null;
+            throw new EvalException("Function \"" + name + "\" expects " + fn.parameters.size() +
+                    " parameters, but " + node.parameters.size() + " were provided.");
         }
-
 
         Environment fCallEnv = new Environment(env);
         // build the function environment
         for (int i=0; i<node.parameters.size(); i++) {
             VariableDeclNode formal = fn.parameters.get(i); // todo: verify type
             Expr actual = node.parameters.get(i);
+            setEvalMode(EvalMode.REFERENCE);
 
-            fCallEnv.defineVar((String) formal.name.accept(this), actual.accept(this));
+            String formalName = (String) formal.name.accept(this);
+            if (fCallEnv.varExists(formalName)) {
+                throw new EvalException("Parameter name \"" + formalName + "\" already exists in function scope.");
+            }
+            fCallEnv.defineVar(formalName, actual.accept(this));
         }
         Environment previous = env;
         env = fCallEnv;
-
 
         Object res = fn.body.accept(this);
         env = previous;
@@ -369,11 +390,11 @@ public class ASTEvalVisitor extends ASTBaseVisitor<Object> {
 
     @Override
     public Object visitVariableDef(VariableDefNode node) {
+        setEvalMode(EvalMode.REFERENCE);
         String name = (String) node.name.accept(this);
 
         if (env.assnExists(name)) {
-            System.err.println("Function or Variable named \"" + name + "\" already exists");
-            return null;
+            throw new EvalException("Function or Variable named \"" + name + "\" already exists");
         }
 
         Object value = node.initialValue.accept(this);
@@ -385,11 +406,11 @@ public class ASTEvalVisitor extends ASTBaseVisitor<Object> {
 
     @Override
     public Object visitVariableAssn(VariableAssnNode node) {
+        setEvalMode(EvalMode.REFERENCE);
         String name = (String) node.name.accept(this);
 
         if (!env.varExists(name)) {
-            System.err.println("Variable named \"" + name + "\" doesn't exist in this context!");
-            return null;
+            throw new EvalException("Variable named \"" + name + "\" doesn't exist in this context!");
         }
 
         Object value = node.newValue.accept(this);
@@ -400,10 +421,10 @@ public class ASTEvalVisitor extends ASTBaseVisitor<Object> {
 
     @Override
     public Object visitVariableDecl(VariableDeclNode node) {
+        setEvalMode(EvalMode.REFERENCE);
         String name = (String) node.name.accept(this);
         if (env.assnExists(name)) {
-            System.err.println("Function or Variable named \"" + name + "\" already exists");
-            return null;
+            throw new EvalException("Function or Variable named \"" + name + "\" already exists");
         }
 
         env.defineVar(name, null);
@@ -416,6 +437,5 @@ public class ASTEvalVisitor extends ASTBaseVisitor<Object> {
         node.expr.accept(this);
         return null;
     }
-
 
 }

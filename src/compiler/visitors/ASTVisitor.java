@@ -6,11 +6,11 @@ public interface ASTVisitor<R> {
     R visitProgramNode(ProgramNode node);
     R visitVariableDecl(VariableDeclNode node);
     R visitVariableDef(VariableDefNode node);
-    R visitVariableAssn(VariableAssnNode node);
+    R visitVariableAssn(VariableAssnNode node); // todo: this is kind of an binary op
 
-    R visitIntLiteral(LiteralIntNode node);
-    R visitFloatLiteral(LiteralFloatNode node);
-    R visitStringLiteral(LiteralStringNode node);
+    R visitLiteralInt(LiteralIntNode node);
+    R visitLiteralFloat(LiteralFloatNode node);
+    R visitLiteralString(LiteralStringNode node);
 
     R visitBinaryOp(BinaryOpNode node);
     R visitUnaryOp(UnaryOpNode node);
@@ -24,5 +24,6 @@ public interface ASTVisitor<R> {
     R visitReturn(ReturnStmtNode node);
     R visitResult(ResultStmtNode node);
     R visitExprStmt(ExprStmtNode node);
-    R visitIdentifierNode(IdentifierNode node);
+
+    R visitIdentifier(IdentifierNode node);
 }

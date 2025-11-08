@@ -11,6 +11,6 @@ public class LiteralFloatNode extends LiteralNode {
 
     @Override
     public <R> R accept(ASTVisitor<R> visitor) {
-        return visitor.visitFloatLiteral(this);
+        return visitor.visitLiteralFloat(this);
     }
 }

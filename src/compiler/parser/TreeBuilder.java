@@ -204,6 +204,8 @@ public class TreeBuilder {
         return new ResultStmtNode(expr);
     }
 
+
+
     /*
     Präzedenz:
     1. Zuweisung: = (Rechts-assoziativ)
@@ -444,7 +446,7 @@ public class TreeBuilder {
         return new FunctionCallNode(callee, arguments);
     }
 
-    // 11. Primär: Literal, Variablen, Klammern
+    // 15. Primär: Literal, Variablen, Klammern
     private Expr parsePrimary() {
         if (match(TokenType.INT_LITERAL)) {
             // Holen des generischen Tokens, um auf den Wert zuzugreifen
@@ -468,7 +470,7 @@ public class TreeBuilder {
         if (match(TokenType.IDENTIFIER)) {
             Token<?> token = tokens.get(current - 1);
             // Casten auf String (Bezeichner-Name)
-            return new IdentifierNode((String) token.getValue());
+            return new IdentifierNode((String) token.getValue()); // todo: maybe not variable node
         }
 
         if (match(TokenType.PAREN_OPEN)) {
