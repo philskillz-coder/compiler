@@ -1,6 +1,7 @@
-package compiler.ast.builtins;
+package compiler.visitors.eval;
 
 import compiler.ast.*;
+import compiler.visitors.eval.values.NullValue;
 
 import java.util.Collections;
 
@@ -15,9 +16,9 @@ public class Print extends FunctionDeclNode {
                 )),
                 new VirtualBlockExpr() {
                     @Override
-                    public Object execute(Environment env) {
-                        System.out.println(env.getVar("text"));
-                        return null;
+                    public EvalResult execute(Environment env) {
+                        System.out.println(env.getVar("text").toString());
+                        return EvalResult.returnValue(NullValue.getInstance());
                     }
                 },
                 new IdentifierNode("void"),

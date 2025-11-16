@@ -3,9 +3,9 @@ package compiler.ast;
 import compiler.visitors.ASTVisitor;
 
 public class LiteralFloatNode extends LiteralNode {
-    public final double value;
+    public final float value;
 
-    public LiteralFloatNode(double value) {
+    public LiteralFloatNode(float value) {
         this.value = value;
     }
 

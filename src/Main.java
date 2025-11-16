@@ -8,9 +8,28 @@ import java.util.List;
 
 public class Main {
     private final String CODE = ""+
-//            "func int fib(int n) { if (n == 0) { return 0; } else if (n == 1) { return 1; } else { return fib(n - 1) + fib(n - 2); } } print(fib(3));";
-        "func void t(int n) {print(n);} t(1);";
-    // func
+//            "func int fib(int n) { if (n == 0) { return 0; } else if (n == 1) { return 1; } else { return fib(n - 1) + fib(n - 2); } } print(fib(21));";
+//    "var int a = (var int b = 5) + 10; print(a); print(b)";
+    "func int fib(int n) {\n" +
+            "    if (n == 0) {\n" +
+            "        return 0;\n" +
+            "    }\n" +
+            "\n" +
+            "    var int a = 0;\n" +
+            "    var int b = 1;\n" +
+            "\n" +
+            "    var int i = 1;\n" +
+            "    while (i < n) {\n" +
+            "        var int tmp = a + b;\n" +
+            "        a = b;\n" +
+            "        b = tmp;\n" +
+            "        i = i + 1;\n" +
+            "    }\n" +
+            "\n" +
+            "    return b;\n" +
+            "}\n" +
+            "\n" +
+            "print(fib(44));";
 
     public Main() {
         Tokenizer t = new Tokenizer(CODE);

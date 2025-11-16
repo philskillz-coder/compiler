@@ -9,6 +9,7 @@ public enum TokenType {
     INT_LITERAL,      // Ganze Zahl (z.B. 123)
     STRING_LITERAL,   // Zeichenkette (z.B. "text")
     FLOAT_LITERAL,    // Dezimalzahl (z.B. 12.3)
+    BOOL_LITERAL,     // Boolescher Wert (true/false)
 
     // II. ARITHMETISCHE & LOGISCHE OPERATOREN
     OP_ADD,             // +

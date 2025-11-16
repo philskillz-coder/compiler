@@ -95,7 +95,11 @@ class TokenLiteralString extends Token<String> {
     }
 }
 
-
+class TokenLiteralBool extends Token<Boolean> {
+    public TokenLiteralBool(Boolean value) {
+        super(value, TokenType.BOOL_LITERAL);
+    }
+}
 
 // --- 3. Operatoren ---
 

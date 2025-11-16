@@ -458,13 +458,19 @@ public class TreeBuilder {
         if (match(TokenType.FLOAT_LITERAL)) {
             Token<?> token = tokens.get(current - 1);
             // Casten auf Double
-            return new LiteralFloatNode((Double) token.getValue());
+            return new LiteralFloatNode((Float) token.getValue());
         }
 
         if (match(TokenType.STRING_LITERAL)) {
             Token<?> token = tokens.get(current - 1);
             // Casten auf String
             return new LiteralStringNode((String) token.getValue());
+        }
+
+        if (match(TokenType.BOOL_LITERAL)) {
+            Token<?> token = tokens.get(current - 1);
+            // Casten auf Boolean
+            return new LiteralBoolNode((Boolean) token.getValue());
         }
 
         if (match(TokenType.IDENTIFIER)) {

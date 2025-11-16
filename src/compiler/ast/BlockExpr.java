@@ -7,7 +7,6 @@ import java.util.List;
 
 public class BlockExpr extends Expr {
     public final List<Stmt> statements;
-    public Environment environment;
 
     public BlockExpr() {
         this.statements = Collections.emptyList();

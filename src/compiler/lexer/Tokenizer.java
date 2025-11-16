@@ -256,6 +256,11 @@ public class Tokenizer {
             case "return": tokens.add(new TokenKwReturn()); break;
             case "result": tokens.add(new TokenKwResult()); break;
 
+            // value literals
+            case "true": tokens.add(new TokenLiteralBool(true)); break;
+            case "false": tokens.add(new TokenLiteralBool(false)); break;
+            // todo: null literal?
+
             default: tokens.add(new TokenIdentifier(text)); break;
         }
     }

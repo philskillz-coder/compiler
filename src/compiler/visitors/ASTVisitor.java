@@ -11,6 +11,7 @@ public interface ASTVisitor<R> {
     R visitLiteralInt(LiteralIntNode node);
     R visitLiteralFloat(LiteralFloatNode node);
     R visitLiteralString(LiteralStringNode node);
+    R visitLiteralBool(LiteralBoolNode node);
 
     R visitBinaryOp(BinaryOpNode node);
     R visitUnaryOp(UnaryOpNode node);
