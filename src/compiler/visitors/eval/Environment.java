@@ -1,13 +1,13 @@
 package compiler.visitors.eval;
 
 import compiler.ast.FunctionDeclNode;
-import compiler.visitors.eval.values.AbstractValue;
 import compiler.visitors.eval.exceptions.EvalException;
+import compiler.visitors.eval.values.AbstractValue;
 
 import java.util.HashMap;
 import java.util.Map;
 
-class Environment {
+public class Environment {
     public enum Visibility {
         NORMAL,
         JUMP

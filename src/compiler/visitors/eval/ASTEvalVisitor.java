@@ -5,8 +5,6 @@ import compiler.visitors.ASTBaseVisitor;
 import compiler.visitors.eval.exceptions.EvalException;
 import compiler.visitors.eval.values.*;
 
-import java.util.List;
-
 public class ASTEvalVisitor extends ASTBaseVisitor<EvalResult> {
 
     private final Environment globalEnv;
@@ -487,21 +485,4 @@ public class ASTEvalVisitor extends ASTBaseVisitor<EvalResult> {
         return EvalResult.normal();
     }
 
-    private static boolean checkType(Object obj, List<Class<?>> types) {
-        for (Class<?> type : types) {
-            if (type.isInstance(obj)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean checkType(Object obj, Class<?>... types) {
-        for (Class<?> type : types) {
-            if (type.isInstance(obj)) {
-                return true;
-            }
-        }
-        return false;
-    }
 }

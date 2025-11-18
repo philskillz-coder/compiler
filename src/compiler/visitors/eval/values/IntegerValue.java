@@ -3,7 +3,7 @@ package compiler.visitors.eval.values;
 import compiler.ast.BinaryOperator;
 import compiler.visitors.eval.exceptions.EvalException;
 
-public class IntegerValue extends AbstractValue {
+public class IntegerValue extends LiteralValue {
     private final int value;
 
     public IntegerValue(int value) {
@@ -28,6 +28,13 @@ public class IntegerValue extends AbstractValue {
         if (other instanceof IntegerValue) {
             return new IntegerValue(this.value + unwrap(other));
         }
+        if (other instanceof FloatValue) {
+            return new FloatValue(this.value + (float) other.getNativeAbstractValue());
+        }
+        if (other instanceof StringValue) {
+            return new StringValue(this.value + (String) other.getNativeAbstractValue());
+        }
+
         throw new EvalException("Operator '+' not supported between Integer and " + other.getClass().getSimpleName());
     }
 
@@ -36,6 +43,10 @@ public class IntegerValue extends AbstractValue {
         if (other instanceof IntegerValue) {
             return new IntegerValue(this.value - unwrap(other));
         }
+        if (other instanceof FloatValue) {
+            return new FloatValue(this.value - (float) other.getNativeAbstractValue());
+        }
+
         throw new EvalException("Operator '-' not supported between Integer and " + other.getClass().getSimpleName());
     }
 
@@ -44,16 +55,39 @@ public class IntegerValue extends AbstractValue {
         if (other instanceof IntegerValue) {
             return new IntegerValue(this.value * unwrap(other));
         }
+        if (other instanceof FloatValue) {
+            return new FloatValue(this.value * (float) other.getNativeAbstractValue());
+        }
+        if (other instanceof StringValue) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < this.value; i++) {
+                sb.append(other.getNativeAbstractValue());
+            }
+            return new StringValue(sb.toString());
+        }
         throw new EvalException("Operator '*' not supported between Integer and " + other.getClass().getSimpleName());
     }
 
     @Override
     public AbstractValue divide(AbstractValue other) {
-        int rhs = unwrap(other);
-        if (rhs == 0) {
-            throw new EvalException("Runtime error: Division by zero.");
+        if (other instanceof IntegerValue) {
+            int rhs = unwrap(other);
+            if (rhs == 0) {
+                throw new EvalException("Runtime error: Division by zero.");
+            }
+
+            return new IntegerValue(this.value / rhs);
         }
-        return new IntegerValue(this.value / rhs);
+        if (other instanceof FloatValue) {
+            float rhs = (float) other.getNativeAbstractValue();
+            if (rhs == 0.0) {
+                throw new EvalException("Runtime error: Division by zero.");
+            }
+
+            return new FloatValue(this.value / rhs);
+        }
+
+        throw new EvalException("Operator '/' not supported between Integer and " + other.getClass().getSimpleName());
     }
 
     @Override

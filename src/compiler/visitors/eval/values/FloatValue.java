@@ -3,7 +3,7 @@ package compiler.visitors.eval.values;
 import compiler.ast.BinaryOperator;
 import compiler.visitors.eval.exceptions.EvalException;
 
-public class FloatValue extends AbstractValue {
+public class FloatValue extends LiteralValue {
     private final float value;
 
     public FloatValue(float value) {

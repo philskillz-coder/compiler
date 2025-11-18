@@ -8,6 +8,7 @@ import java.util.List;
 
 public class Main {
     private final String CODE = ""+
+//            "var int a = 10;";
 //            "func int fib(int n) { if (n == 0) { return 0; } else if (n == 1) { return 1; } else { return fib(n - 1) + fib(n - 2); } } print(fib(21));";
 //    "var int a = (var int b = 5) + 10; print(a); print(b)";
     "func int fib(int n) {\n" +
@@ -29,7 +30,7 @@ public class Main {
             "    return b;\n" +
             "}\n" +
             "\n" +
-            "print(fib(44));";
+            "print(fib(17));";
 
     public Main() {
         Tokenizer t = new Tokenizer(CODE);

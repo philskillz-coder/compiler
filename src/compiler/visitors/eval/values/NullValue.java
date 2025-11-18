@@ -3,7 +3,7 @@ package compiler.visitors.eval.values;
 import compiler.ast.BinaryOperator;
 import compiler.visitors.eval.exceptions.EvalException;
 
-public class NullValue extends AbstractValue {
+public class NullValue extends LiteralValue {
 
     private static final NullValue INSTANCE = new NullValue();
 

@@ -3,7 +3,7 @@ package compiler.visitors.eval.values;
 import compiler.ast.BinaryOperator;
 import compiler.visitors.eval.exceptions.EvalException;
 
-public class StringValue extends AbstractValue {
+public class StringValue extends LiteralValue {
     private final String value;
 
     public StringValue(String value) {

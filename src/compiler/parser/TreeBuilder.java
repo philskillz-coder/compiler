@@ -476,7 +476,7 @@ public class TreeBuilder {
         if (match(TokenType.IDENTIFIER)) {
             Token<?> token = tokens.get(current - 1);
             // Casten auf String (Bezeichner-Name)
-            return new IdentifierNode((String) token.getValue()); // todo: maybe not variable node
+            return new IdentifierNode((String) token.getValue());
         }
 
         if (match(TokenType.PAREN_OPEN)) {

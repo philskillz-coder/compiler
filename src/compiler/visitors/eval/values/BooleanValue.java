@@ -3,7 +3,7 @@ package compiler.visitors.eval.values;
 import compiler.ast.BinaryOperator;
 import compiler.visitors.eval.exceptions.EvalException;
 
-public class BooleanValue extends AbstractValue {
+public class BooleanValue extends LiteralValue {
     private final boolean value;
 
     public BooleanValue(boolean value) {
