@@ -1,6 +1,6 @@
 package compiler.visitors;
 
-import compiler.ast.*;
+import compiler.parser.ast.*;
 
 public interface ASTVisitor<R> {
     R visitProgramNode(ProgramNode node);
@@ -20,6 +20,7 @@ public interface ASTVisitor<R> {
 
     R visitBlockExpr(BlockExpr node);
     R visitBlockStmt(BlockStmt node);
+    R visitClassDecl(ClassDeclNode node);
     R visitFunctionDecl(FunctionDeclNode node);
     R visitFunctionCall(FunctionCallNode node);
     R visitReturn(ReturnStmtNode node);

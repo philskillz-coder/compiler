@@ -1,9 +1,10 @@
 package compiler.visitors.eval;
 
-import compiler.ast.*;
+import compiler.parser.ast.*;
 import compiler.visitors.ASTBaseVisitor;
 import compiler.visitors.eval.exceptions.EvalException;
 import compiler.visitors.eval.values.*;
+import compiler.visitors.eval.values.literal.*;
 
 public class ASTEvalVisitor extends ASTBaseVisitor<EvalResult> {
 
@@ -200,7 +201,7 @@ public class ASTEvalVisitor extends ASTBaseVisitor<EvalResult> {
     }
 
     @Override
-    public EvalResult visitIdentifier(IdentifierNode node) {
+    public EvalResult visitIdentifier(IdentifierNameNode node) {
         AbstractValue value = env.getVar(node.identifier);
 
         return EvalResult.value(value);
@@ -313,8 +314,8 @@ public class ASTEvalVisitor extends ASTBaseVisitor<EvalResult> {
     @Override
     public EvalResult visitFunctionCall(FunctionCallNode node) {
         String name;
-        if (node.callee instanceof IdentifierNode) {
-            name = ((IdentifierNode) node.callee).identifier;
+        if (node.callee instanceof IdentifierNameNode) {
+            name = ((IdentifierNameNode) node.callee).identifier;
         } else {
             EvalResult calleeResult = node.callee.accept(this);
             if (!calleeResult.is(EvalResult.ResultType.VALUE)) {

@@ -1,4 +1,4 @@
-import compiler.ast.*;
+import compiler.parser.ast.*;
 import compiler.lexer.Token;
 import compiler.lexer.Tokenizer;
 import compiler.parser.TreeBuilder;

@@ -101,6 +101,12 @@ class TokenLiteralBool extends Token<Boolean> {
     }
 }
 
+class TokenLiteralNull extends Token<Object> {
+    public TokenLiteralNull() {
+        super(null, TokenType.NULL_LITERAL);
+    }
+}
+
 // --- 3. Operatoren ---
 
 abstract class TokenOperator extends TokenSymbol {
@@ -233,10 +239,34 @@ class TokenKwFnDecl extends TokenKw {
     public TokenKwFnDecl() { super("func", TokenType.KW_FUNC); }
 }
 
+class TokenKwClassDecl extends TokenKw {
+    public TokenKwClassDecl() { super("class", TokenType.KW_CLASS); }
+}
+
 class TokenKwReturn extends TokenKw {
     public TokenKwReturn() {super("return", TokenType.KW_RETURN);}
 }
 
 class TokenKwResult extends TokenKw {
     public TokenKwResult() { super("result", TokenType.KW_RESULT);}
+}
+
+abstract class TokenKwBm extends TokenKw {
+    public TokenKwBm(String boundsModifier) { super(boundsModifier, TokenType.KW_BM);}
+}
+
+class TokenKwBmStatic extends TokenKwBm {
+    public TokenKwBmStatic() { super("static"); }
+}
+
+abstract class TokenKwAm extends TokenKw {
+    public TokenKwAm(String accessModifier) { super(accessModifier, TokenType.KW_AM); }
+}
+
+class TokenKwAmPublic extends TokenKwAm {
+    public TokenKwAmPublic() {super("public"); }
+}
+
+class TokenKwAmPrivate extends TokenKwAm {
+    public TokenKwAmPrivate() {super("private"); }
 }

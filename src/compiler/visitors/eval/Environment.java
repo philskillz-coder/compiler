@@ -1,6 +1,6 @@
 package compiler.visitors.eval;
 
-import compiler.ast.FunctionDeclNode;
+import compiler.parser.ast.FunctionDeclNode;
 import compiler.visitors.eval.exceptions.EvalException;
 import compiler.visitors.eval.values.AbstractValue;
 

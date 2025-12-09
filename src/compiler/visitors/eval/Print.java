@@ -1,7 +1,7 @@
 package compiler.visitors.eval;
 
-import compiler.ast.*;
-import compiler.visitors.eval.values.NullValue;
+import compiler.parser.ast.*;
+import compiler.visitors.eval.values.literal.NullValue;
 
 import java.util.Collections;
 
@@ -9,10 +9,10 @@ public class Print extends FunctionDeclNode {
 
     public Print() {
         super(
-                new IdentifierNode("print"),
+                new IdentifierNameNode("print"),
                 Collections.singletonList(new VariableDeclNode(
-                        new IdentifierNode("string"),
-                        new IdentifierNode("text")
+                        new IdentifierNameNode("string"),
+                        new IdentifierNameNode("text")
                 )),
                 new VirtualBlockExpr() {
                     @Override
@@ -21,7 +21,7 @@ public class Print extends FunctionDeclNode {
                         return EvalResult.returnValue(NullValue.getInstance());
                     }
                 },
-                new IdentifierNode("void"),
+                new IdentifierNameNode("void"),
                 true
         );
     }

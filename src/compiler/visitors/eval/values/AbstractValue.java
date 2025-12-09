@@ -1,6 +1,6 @@
 package compiler.visitors.eval.values;
 
-import compiler.ast.BinaryOperator;
+import compiler.parser.ast.BinaryOperator;
 import compiler.visitors.eval.exceptions.EvalException;
 
 public abstract class AbstractValue implements NumericOperations, LogicOperations {
