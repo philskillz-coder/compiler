@@ -1,7 +1,7 @@
 package compiler.parser;
 
-import compiler.ast.*;
-import compiler.ast.ExprStmtNode;
+import compiler.parser.ast.*;
+import compiler.parser.ast.ExprStmtNode;
 import compiler.lexer.Token;
 import compiler.lexer.TokenType;
 
@@ -35,7 +35,9 @@ public class TreeBuilder {
         if (match(TokenType.KW_VAR)) {
             return parseVariableDeclaration();
         }
-        // todo: class
+        if (match(TokenType.KW_CLASS)) {
+            return parseClassDeclaration();
+        }
 
         // Wenn es keine Deklaration ist, muss es eine Anweisung sein,
         return parseStatement();
@@ -90,6 +92,32 @@ public class TreeBuilder {
         return new BlockExpr(nodes);
     }
 
+    private ClassDeclNode parseClassDeclaration() {
+        Token<?> amToken = null;
+        Token<?> bmToken = null;
+        Token<?> nameToken = null;
+
+        if (peekMatch(TokenType.KW_AM)) {
+            amToken = consume(TokenType.KW_AM);
+        }
+
+        if (peekMatch(TokenType.KW_BM)) {
+            bmToken = consume(TokenType.KW_BM);
+        }
+
+        nameToken = consume(TokenType.IDENTIFIER, "Expected class name after class declaration.");
+
+        consume(TokenType.CURLY_OPEN, "Expected opening bracket for class body.");
+        BlockStmt body = parseBlockStatement();
+
+        return new ClassDeclNode(
+                amToken != null ? new IdentifierAccessNode(amToken.getValue().toString()) : null,
+                bmToken != null ? new IdentifierBoundsNode(bmToken.getValue().toString()) : null,
+                new IdentifierNameNode(nameToken.getValue().toString()),
+                body
+        );
+    }
+
     // todo: fix variable ref/ variable decl:
     private FunctionDeclNode parseFunctionDeclaration() {
         Token<?> returnTypeIdentifier = consume(TokenType.IDENTIFIER);
@@ -111,16 +139,16 @@ public class TreeBuilder {
 
         Stmt body = parseBody();
 
-        return new FunctionDeclNode(new IdentifierNode(nameToken.getValue().toString()), parameters, body, new IdentifierNode(returnTypeIdentifier.getValue().toString()));
+        return new FunctionDeclNode(new IdentifierNameNode(nameToken.getValue().toString()), parameters, body, new IdentifierNameNode(returnTypeIdentifier.getValue().toString()));
     }
 
     // Parst nur den Typ und Namen einer Variablen (oder eines Parameters)
     private VariableDeclNode parseVariableCore() {
         Token<?> typeToken = consume(TokenType.IDENTIFIER);
-        IdentifierNode typeIdentifierNode = new IdentifierNode(typeToken.getValue().toString());
+        IdentifierNameNode typeIdentifierNode = new IdentifierNameNode(typeToken.getValue().toString());
 
         Token<?> nameToken = consume(TokenType.IDENTIFIER);
-        IdentifierNode nameNode = new IdentifierNode(nameToken.getValue().toString());
+        IdentifierNameNode nameNode = new IdentifierNameNode(nameToken.getValue().toString());
 
         return new VariableDeclNode(typeIdentifierNode, nameNode);
     }
@@ -204,6 +232,8 @@ public class TreeBuilder {
         return new ResultStmtNode(expr);
     }
 
+
+
     /*
     Präzedenz:
     1. Zuweisung: = (Rechts-assoziativ)
@@ -260,13 +290,13 @@ public class TreeBuilder {
         Expr lhs = parseLogicalOr();
 
         if (match(TokenType.OP_ASSIGN)) {
-            if (!(lhs instanceof IdentifierNode)) {
+            if (!(lhs instanceof IdentifierNameNode)) {
                 System.err.println("Ungültiges Zuweisungsziel.");
                 return null;
             }
 
             Expr rhs = parseAssignment(); // rekursion wegen rechts-assoziativität
-            IdentifierNode target = (IdentifierNode) lhs;
+            IdentifierNameNode target = (IdentifierNameNode) lhs;
             return new VariableAssnNode(target, rhs);
         }
 
@@ -444,7 +474,7 @@ public class TreeBuilder {
         return new FunctionCallNode(callee, arguments);
     }
 
-    // 11. Primär: Literal, Variablen, Klammern
+    // 15. Primär: Literal, Variablen, Klammern
     private Expr parsePrimary() {
         if (match(TokenType.INT_LITERAL)) {
             // Holen des generischen Tokens, um auf den Wert zuzugreifen
@@ -456,7 +486,7 @@ public class TreeBuilder {
         if (match(TokenType.FLOAT_LITERAL)) {
             Token<?> token = tokens.get(current - 1);
             // Casten auf Double
-            return new LiteralFloatNode((Double) token.getValue());
+            return new LiteralFloatNode((Float) token.getValue());
         }
 
         if (match(TokenType.STRING_LITERAL)) {
@@ -465,10 +495,16 @@ public class TreeBuilder {
             return new LiteralStringNode((String) token.getValue());
         }
 
+        if (match(TokenType.BOOL_LITERAL)) {
+            Token<?> token = tokens.get(current - 1);
+            // Casten auf Boolean
+            return new LiteralBoolNode((Boolean) token.getValue());
+        }
+
         if (match(TokenType.IDENTIFIER)) {
             Token<?> token = tokens.get(current - 1);
             // Casten auf String (Bezeichner-Name)
-            return new IdentifierNode((String) token.getValue());
+            return new IdentifierNameNode((String) token.getValue());
         }
 
         if (match(TokenType.PAREN_OPEN)) {
@@ -486,6 +522,15 @@ public class TreeBuilder {
 
     // --- Token-Management Hilfsfunktionen ---
 
+    /**
+     * Gibt den aktuellen Token zurück, ohne den Lesepointer weiterzubewegen.
+     * <p>
+     * Falls das Ende der Tokenliste erreicht ist, wird das letzte Token
+     * (typischerweise das EOF-Token) zurückgegeben. Andernfalls wird das
+     * Token an der aktuellen Position geliefert.
+     *
+     * @return das aktuelle Token oder, falls am Ende, das letzte Token der Liste
+     */
     private Token<?> peek() {
         if (isAtEnd()) {
             return tokens.get(tokens.size() - 1);
@@ -493,6 +538,16 @@ public class TreeBuilder {
         return tokens.get(current);
     }
 
+    /**
+     * Prüft, ob das aktuelle Token einem der angegebenen Typen entspricht,
+     * ohne den Lesepointer zu bewegen.
+     * <p>
+     * Befindet sich der Parser bereits am Ende der Tokenliste, wird {@code false} zurückgegeben.
+     *
+     * @param types eine Liste möglicher Token-Typen
+     * @return {@code true}, wenn das aktuelle Token einem der übergebenen Typen entspricht,
+     *         ansonsten {@code false}
+     */
     private boolean peekMatch(TokenType... types) {
         if (isAtEnd()) {
             return false;
@@ -508,10 +563,28 @@ public class TreeBuilder {
         return false;
     }
 
+    /**
+     * Liest das aktuelle Token, wenn es dem erwarteten Typ entspricht, und gibt es zurück.
+     * Andernfalls wird eine {@link UnexpectedTypeException} ausgelöst.
+     *
+     * @param expectedType der erwartete Token-Typ
+     * @return das gelesene Token, falls es den Typ erfüllt
+     * @throws UnexpectedTypeException wenn das Token nicht dem erwarteten Typ entspricht
+     */
     private Token<?> consume(TokenType expectedType) {
         return consume(expectedType, null);
     }
 
+    /**
+     * Liest das aktuelle Token, wenn es dem erwarteten Typ entspricht, und gibt es zurück.
+     * Andernfalls wird eine {@link UnexpectedTypeException} mit einer optionalen Zusatzmeldung
+     * ausgelöst.
+     *
+     * @param expectedType der erwartete Token-Typ
+     * @param errorMessage eine optionale Fehlermeldung zur Kontextualisierung, kann {@code null} sein
+     * @return das gelesene Token, falls es den erwarteten Typ hat
+     * @throws UnexpectedTypeException wenn das Token nicht dem erwarteten Typ entspricht
+     */
     private Token<?> consume(TokenType expectedType, String errorMessage) {
         if (peek().getType() != expectedType) {
             String contextMessage = (errorMessage != null && !errorMessage.isEmpty()) ? errorMessage + " " : "";
@@ -529,6 +602,13 @@ public class TreeBuilder {
         return tokens.get(current++);
     }
 
+    /**
+     * Prüft, ob das aktuelle Token einem der angegebenen Typen entspricht.
+     * Wenn ja, wird der Lesepointer weiterbewegt.
+     *
+     * @param types die möglichen Token-Typen, mit denen verglichen wird
+     * @return {@code true}, wenn das aktuelle Token einem der Typen entspricht, sonst {@code false}
+     */
     private boolean match(TokenType... types) {
         for (TokenType type : types) {
             if (peek().getType() == type) {
@@ -539,6 +619,15 @@ public class TreeBuilder {
         return false;
     }
 
+    /**
+     * Versucht, nacheinander mehrere Token-Typen in genau der angegebenen Reihenfolge
+     * abzugleichen. Wenn alle Typen übereinstimmen, wird der Lesepointer entsprechend
+     * weiterbewegt. Schlägt auch nur einer der Vergleiche fehl, wird der Pointer zurückgesetzt.
+     *
+     * @param types die zu prüfende Sequenz von Token-Typen
+     * @return {@code true}, wenn alle Token in der angegebenen Reihenfolge übereinstimmen,
+     *         sonst {@code false}
+     */
     private boolean matchMany(TokenType... types) {
         int savedCurrent = current;
 
@@ -554,6 +643,14 @@ public class TreeBuilder {
         return true;
     }
 
+    /**
+     * Prüft, ob der Parser das Ende der Tokenliste erreicht hat.
+     * <p>
+     * Dies ist der Fall, wenn der Lesepointer hinter dem letzten Token liegt
+     * oder wenn das aktuelle Token vom Typ {@code EOF} ist.
+     *
+     * @return {@code true}, wenn das Ende erreicht wurde, sonst {@code false}
+     */
     private boolean isAtEnd() {
         if (current >= tokens.size()) {
             return true;
@@ -640,4 +737,5 @@ public class TreeBuilder {
                 throw new IllegalArgumentException("Der TokenType " + type + " kann nicht auf einen UnaryOperator abgebildet werden.");
         }
     }
+
 }

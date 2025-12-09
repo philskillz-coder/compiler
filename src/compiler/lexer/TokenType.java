@@ -9,6 +9,8 @@ public enum TokenType {
     INT_LITERAL,      // Ganze Zahl (z.B. 123)
     STRING_LITERAL,   // Zeichenkette (z.B. "text")
     FLOAT_LITERAL,    // Dezimalzahl (z.B. 12.3)
+    BOOL_LITERAL,     // Boolescher Wert (true/false)
+    NULL_LITERAL,
 
     // II. ARITHMETISCHE & LOGISCHE OPERATOREN
     OP_ADD,             // +
@@ -60,9 +62,13 @@ public enum TokenType {
     KW_IF,              // if
     KW_ELSE,            // else
     KW_WHILE,           // while
+    KW_CLASS,           // class
     KW_FUNC,            // func
     KW_RETURN,          // return
     KW_RESULT,          // result
+
+    KW_BM, // bound-modifier: static (or instance)
+    KW_AM, // access modifier: public/private
 
     // VII. ZUSTANDS-MARKER
     EOF,                // End Of File
