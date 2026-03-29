@@ -65,8 +65,10 @@ public enum TokenType {
     KW_FUNC,            // func
     KW_RETURN,          // return
     KW_CLASS,           // class
-    KW_NEW,             // new
+    KW_PUBLIC,
+    KW_PRIVATE,
     KW_FINAL,           // final
+    KW_STATIC,          // static
     KW_TRY,             // try
     KW_CATCH,           // catch
     KW_FINALLY,         // finally

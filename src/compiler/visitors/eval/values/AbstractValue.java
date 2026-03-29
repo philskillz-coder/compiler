@@ -5,6 +5,9 @@ import compiler.parser.ast.UnaryOperator;
 import compiler.visitors.eval.exceptions.EvalException;
 
 public abstract class AbstractValue implements NumericOperations, LogicOperations, ConversionOperations {
+    public boolean isStatic = false;
+    public boolean isFinal = false;
+    public boolean isPublic = true;
 
     public abstract Object getNativeAbstractValue();
 

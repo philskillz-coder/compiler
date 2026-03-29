@@ -1,11 +1,8 @@
 package compiler.visitors.eval.values.complex;
 
-import compiler.visitors.eval.values.AbstractValue;
 import compiler.visitors.eval.values.ComplexValue;
 import compiler.parser.ast.FunctionDecl;
 import compiler.visitors.eval.values.memory.Closure;
-
-import java.util.Map;
 
 public class FunctionValue extends ComplexValue {
     private final FunctionDecl decl;

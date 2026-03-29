@@ -247,12 +247,47 @@ class TokenKwReturn extends TokenKw {
     public TokenKwReturn() {super("return", TokenType.KW_RETURN);}
 }
 
-class TokenKwFinal extends TokenKw {
-    public TokenKwFinal() { super("final", TokenType.KW_FINAL); }
+abstract class TokenKwMod extends TokenKw {
+
+    public TokenKwMod(String value, TokenType type) {
+        super(value, type);
+    }
 }
 
-class TokenKwNew extends TokenKw {
-    public TokenKwNew() { super("new", TokenType.KW_NEW); }
+class TokenKwAccess extends TokenKwMod {
+    public TokenKwAccess(String value, TokenType type) {
+        super(value, type);
+    }
+}
+
+class TokenKwPublic extends TokenKwAccess {
+    public TokenKwPublic() {
+        super("public", TokenType.KW_PUBLIC);
+    }
+}
+
+class TokenKwPrivate extends TokenKwAccess {
+    public TokenKwPrivate() {
+        super("private", TokenType.KW_PRIVATE);
+    }
+}
+
+class TokenKwProperty extends TokenKw {
+    public TokenKwProperty(String value, TokenType type) {
+        super(value, type);
+    }
+}
+
+class TokenKwStatic extends TokenKwProperty {
+    public TokenKwStatic() {
+        super("static", TokenType.KW_STATIC);
+    }
+}
+
+class TokenKwFinal extends TokenKwProperty {
+    public TokenKwFinal() {
+        super("final", TokenType.KW_FINAL);
+    }
 }
 
 class TokenKwTry extends TokenKw {

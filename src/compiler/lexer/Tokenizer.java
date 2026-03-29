@@ -249,13 +249,16 @@ public class Tokenizer {
         // Prüfe, ob es ein Schlüsselwort ist (hier müsste Ihre Keyword-Logik rein)
         switch (text) {
             case "var": tokens.add(new TokenKwVar()); break;
-            case "final": tokens.add(new TokenKwFinal()); break;
             case "if": tokens.add(new TokenKwIf()); break;
             case "else": tokens.add(new TokenKwElse()); break;
             case "while": tokens.add(new TokenKwWhile()); break;
             case "func": tokens.add(new TokenKwFnDecl()); break;
             case "return": tokens.add(new TokenKwReturn()); break;
             case "class": tokens.add(new TokenKwClassDecl()); break;
+            case "static": tokens.add(new TokenKwStatic()); break;
+            case "final": tokens.add(new TokenKwFinal()); break;
+            case "public": tokens.add(new TokenKwPublic()); break;
+            case "private": tokens.add(new TokenKwPrivate()); break;
 
             // value literals
             case "true": tokens.add(new TokenLiteralBool(true)); break;

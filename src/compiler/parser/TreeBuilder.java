@@ -6,7 +6,9 @@ import compiler.lexer.Token;
 import compiler.lexer.TokenType;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 
 public class TreeBuilder {
@@ -28,7 +30,7 @@ public class TreeBuilder {
         return new Program(declarations);
     }
 
-    private Stmt parseDeclaration() {
+    /*private Stmt parseDeclaration() {
         if (match(TokenType.KW_CLASS)) {
             return parseClassDeclaration();
         }
@@ -40,6 +42,18 @@ public class TreeBuilder {
         }
 
         // Wenn es keine Deklaration ist, muss es eine Anweisung sein,
+        return parseStatement();
+    }*/
+    private Stmt parseDeclaration() {
+        if (peekMatch(TokenType.KW_CLASS)) { // Nur gucken!
+            return parseClassDeclaration();
+        }
+        if (peekMatch(TokenType.KW_FUNC)) { // Nur gucken!
+            return parseFunctionDeclaration();
+        }
+        if (peekMatch(TokenType.KW_VAR)) { // Nur gucken!
+            return parseVariableDeclaration();
+        }
         return parseStatement();
     }
 
@@ -79,7 +93,7 @@ public class TreeBuilder {
         return new Block(nodes);
     }
 
-    private ClassDecl parseClassDeclaration() {
+    /* private ClassDecl parseClassDeclaration() {
         Token<?> nameToken = consume(TokenType.IDENTIFIER);
         String name = nameToken.getValue().toString();
 
@@ -104,10 +118,38 @@ public class TreeBuilder {
         consume(TokenType.CURLY_CLOSE, "Expected '}' after class body.");
 
         return new ClassDecl(name, fields, methods, innerClasses);
+    }*/
+    private ClassDecl parseClassDeclaration() {
+        consume(TokenType.KW_CLASS); // <--- NEU: 'class' wegwerfen
+        Set<Modifier> modifiers = parseModifiers();
+        Token<?> nameToken = consume(TokenType.IDENTIFIER);
+        String name = nameToken.getValue().toString();
+
+        consume(TokenType.CURLY_OPEN, "Expected '{' for class body.");
+        List<VariableDecl> fields = new ArrayList<>();
+        List<FunctionDecl> methods = new ArrayList<>();
+        List<ClassDecl> innerClasses = new ArrayList<>();
+
+        while (!peekMatch(TokenType.CURLY_CLOSE) && !isAtEnd()) {
+            if (peekMatch(TokenType.KW_VAR)) { // <--- GEÄNDERT: peekMatch
+                fields.add(parseVariableDeclaration());
+            } else if (peekMatch(TokenType.KW_FUNC)) { // <--- GEÄNDERT: peekMatch
+                methods.add(parseFunctionDeclaration());
+            } else if (peekMatch(TokenType.KW_CLASS)) { // <--- GEÄNDERT: peekMatch
+                innerClasses.add(parseClassDeclaration());
+            } else {
+                throw new ParseException("Unexpected token in class body: " + peek());
+            }
+        }
+        consume(TokenType.CURLY_CLOSE, "Expected '}' after class body.");
+        ClassDecl c = new ClassDecl(modifiers, name, fields, methods, innerClasses);
+        return c;
     }
 
 
     private FunctionDecl parseFunctionDeclaration() {
+        consume(TokenType.KW_FUNC); // <--- NEU: 'func' wegwerfen
+        Set<Modifier> modifiers = parseModifiers();
         Token<?> returnTypeToken = consume(TokenType.IDENTIFIER);
         Type returnType = new Type(returnTypeToken.getValue().toString());
 
@@ -126,28 +168,33 @@ public class TreeBuilder {
 
         Block body = (Block) parseBody();
 
-        return new FunctionDecl(returnType, name, parameters, body);
+        return new FunctionDecl(modifiers, returnType, name, parameters, body);
     }
 
     // Parst nur den Typ und Namen einer Variablen (oder eines Parameters)
     private VariableDecl parseVariableCore() {
-        Token<?> typeToken = consume(TokenType.IDENTIFIER);
+        // 1. Modifier einsammeln (können auch leer sein)
+        Set<Modifier> modifiers = parseModifiers();
+
+        // 2. Typ parsen
+        Token<?> typeToken = consume(TokenType.IDENTIFIER, "Typ erwartet.");
         Type type = new Type(typeToken.getValue().toString());
 
-        Token<?> nameToken = consume(TokenType.IDENTIFIER);
+        // 3. Name parsen
+        Token<?> nameToken = consume(TokenType.IDENTIFIER, "Variablenname erwartet.");
         String name = nameToken.getValue().toString();
 
-        return new VariableDecl(type, name);
+        return new VariableDecl(type, name, modifiers);
     }
 
-    // [var] TypeRef name
-    private Stmt parseVariableDeclaration() {
-        VariableDecl decl = parseVariableCore();
+    private VariableDecl parseVariableDeclaration() {
+        consume(TokenType.KW_VAR);
+        VariableDecl decl = parseVariableCore(); // type name
 
         if (match(TokenType.OP_ASSIGN)) {
             Expr initialValue = parseExpression();
             consume(TokenType.SEMICOLON, "Erwarte ';' nach der Variablendefinition.");
-            return new VariableDef(decl.type, decl.name, initialValue);
+            return new VariableDef(decl.type, decl.name, initialValue, decl.modifiers);
         } else {
             consume(TokenType.SEMICOLON, "Erwarte ';' nach der Variablendeklaration.");
             return decl;
@@ -389,7 +436,7 @@ public class TreeBuilder {
     }
 
     // 14. Suffix/Call/Property: (post)++, (post)--, (), . (fn)
-    private Expr parseCall() {
+    /* private Expr parseCall() {
         Expr value = parsePrimary();
 
         while (true) {
@@ -402,6 +449,31 @@ public class TreeBuilder {
                 break;
             }
             break;
+        }
+
+        return value;
+    } */
+    // 14. Suffix/Call/Property: (post)++, (post)--, (), .
+    private Expr parseCall() {
+        Expr value = parsePrimary();
+
+        while (true) {
+            if (match(TokenType.PAREN_OPEN)) {
+                // Funktionsaufruf: value()
+                value = parseCallSuffix(value);
+            } else if (match(TokenType.PERIOD)) {
+                // Property-Zugriff: value.name
+                Token<?> name = consume(TokenType.IDENTIFIER, "Erwarte Identifier nach '.'");
+                value = new FieldAccessExpr(value, (String) name.getValue());
+            } else if (match(TokenType.OP_INCREMENT, TokenType.OP_DECREMENT)) {
+                // Postfix-Inkrement/Dekrement: value++
+                UnaryOperator op = mapTokenToUnaryOp(tokens.get(current - 1).getType());
+                value = new UnaryOp(op, value);
+                // Nach einem Postfix-Operator kann normalerweise nichts mehr kommen (a++.)
+                break;
+            } else {
+                break;
+            }
         }
 
         return value;
@@ -476,6 +548,25 @@ public class TreeBuilder {
     }
 
     // --- Token-Management Hilfsfunktionen ---
+
+    private Set<Modifier> parseModifiers() {
+        Set<Modifier> modifiers = new HashSet<>();
+
+        if (match(TokenType.KW_PUBLIC)) {
+            modifiers.add(Modifier.PUBLIC);
+        }
+        if (match(TokenType.KW_PRIVATE)) {
+            modifiers.add(Modifier.PRIVATE);
+        }
+        if (match(TokenType.KW_FINAL)) {
+            modifiers.add(Modifier.FINAL);
+        }
+        if (match(TokenType.KW_STATIC)) {
+            modifiers.add(Modifier.STATIC);
+        }
+
+        return modifiers;
+    }
 
     /**
      * Gibt den aktuellen Token zurück, ohne den Lesepointer weiterzubewegen.
