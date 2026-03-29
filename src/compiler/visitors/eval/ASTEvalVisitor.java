@@ -1,489 +1,259 @@
 package compiler.visitors.eval;
 
 import compiler.parser.ast.*;
-import compiler.visitors.ASTBaseVisitor;
-import compiler.visitors.eval.exceptions.EvalException;
+import compiler.visitors.ASTVisitor;
+import compiler.visitors.eval.exceptions.NotImplementedException;
 import compiler.visitors.eval.values.*;
+import compiler.visitors.eval.values.complex.FunctionValue;
 import compiler.visitors.eval.values.literal.*;
+import compiler.visitors.eval.exceptions.EvalException;
+import compiler.visitors.eval.values.memory.Closure;
 
-public class ASTEvalVisitor extends ASTBaseVisitor<EvalResult> {
+import java.util.*;
 
-    private final Environment globalEnv;
-    private Environment env;
+public class ASTEvalVisitor implements ASTVisitor<EvalResult> {
+
+    private final Deque<Closure> closures = new ArrayDeque<>();
 
     public ASTEvalVisitor() {
-        this.globalEnv = new Environment();
+        Closure root = new Closure();
+        root.setValue("print", new FunctionValue(new Print(), root));
 
-        // Built-in functions
-        this.globalEnv.defineFunction(
-                "print",
-                new Print()
-        );
-        this.env = this.globalEnv; // current environment starts as global
+        closures.push(root);
+    }
+
+    private void enterClosure() { closures.push(new Closure(closures.peek())); }
+    private void enterClosure(Closure closure) { closures.push(closure); }
+    private void exitClosure() { closures.pop(); }
+
+    private void assign(String name, AbstractValue value) {
+        assert closures.peek() != null;
+        closures.peek().setValue(name, value);
+    }
+
+    private AbstractValue resolve(String name) {
+        assert closures.peek() != null;
+        AbstractValue value = closures.peek().getValueParent(name);
+        if (value != null) return value;
+        throw new EvalException("Variable not defined: " + name);
     }
 
     @Override
-    public EvalResult visitProgramNode(ProgramNode node) {
-        for (Stmt stmt : node.nodes) {
-            stmt.accept(this);
+    public EvalResult visitProgram(Program node) {
+        EvalResult last = EvalResult.nullValue();
+        for (Stmt stmt : node.statements) {
+            last = stmt.accept(this);
+            if (last.isBreaking()) return last;
         }
-
-        return EvalResult.value(NullValue.getInstance());
+        return last;
     }
 
     @Override
-    public EvalResult visitLiteralInt(LiteralIntNode node) {
-        return EvalResult.value(new IntegerValue(node.value));
-    }
-
-    @Override
-    public EvalResult visitLiteralFloat(LiteralFloatNode node) {
-        return EvalResult.value(new FloatValue(node.value));
-    }
-
-    @Override
-    public EvalResult visitLiteralString(LiteralStringNode node) {
-        return EvalResult.value(new StringValue(node.value));
-    }
-
-    @Override
-    public EvalResult visitLiteralBool(LiteralBoolNode node) {
-        return EvalResult.value(new BooleanValue(node.value));
-    }
-
-    @Override
-    public EvalResult visitBinaryOp(BinaryOpNode node) {
-        EvalResult _lhs = node.lhs.accept(this);
-
-        if (_lhs.isBreaking()) {
-            return _lhs;
+    public EvalResult visitBlock(Block node) {
+        if (node instanceof VirtualBlockExpr) {
+            return ((VirtualBlockExpr) node).execute(closures.peek());
         }
 
-        EvalResult _rhs = node.rhs.accept(this);
-        if (_rhs.isBreaking()) {
-            return _rhs;
-        }
-
-        AbstractValue lhs = _lhs.unwrapValue();
-        AbstractValue rhs = _rhs.unwrapValue();
-        AbstractValue resultValue;
-
-        switch (node.op) {
-            case ADD:
-                resultValue = lhs.add(rhs);
-                break;
-            case SUB:
-                resultValue = lhs.subtract(rhs);
-                break;
-            case MUL:
-                resultValue = lhs.multiply(rhs);
-                break;
-            case DIV:
-                resultValue = lhs.divide(rhs);
-                break;
-            case MOD:
-                resultValue = lhs.modulo(rhs);
-                break;
-            case POWER:
-                resultValue = lhs.power(rhs);
-                break;
-
-            // --- Bitweise Operationen ---
-            case BITWISE_AND:
-                resultValue = lhs.bitwiseAnd(rhs);
-                break;
-            case BITWISE_OR:
-                resultValue = lhs.bitwiseOr(rhs);
-                break;
-            case BITWISE_XOR:
-                resultValue = lhs.bitwiseXor(rhs);
-                break;
-            case LEFT_SHIFT:
-                resultValue = lhs.leftShift(rhs);
-                break;
-            case RIGHT_SHIFT:
-                resultValue = lhs.rightShift(rhs);
-                break;
-
-            // --- Logische Operationen ---
-            case LOGICAL_AND:
-                resultValue = lhs.logicalAnd(rhs);
-                break;
-            case LOGICAL_OR:
-                resultValue = lhs.logicalOr(rhs);
-                break;
-
-            // --- Vergleichsoperationen ---
-            case EQUAL:
-            case NOT_EQUAL:
-            case LESS:
-            case GREATER:
-            case LESS_EQUAL:
-            case GREATER_EQUAL:
-                resultValue = lhs.compare(node.op, rhs);
-                break;
-
-            default:
-                throw new EvalException("Unsupported binary operator encountered: " + node.op);
-        }
-
-        // 4. Verpacke das finale Value-Ergebnis
-        return EvalResult.value(resultValue);
-    }
-
-    @Override
-    public EvalResult visitUnaryOp(UnaryOpNode node) {
-        EvalResult _valueResult = node.value.accept(this);
-
-        if (_valueResult.isBreaking()) {
-            return _valueResult;
-        }
-
-        AbstractValue value = _valueResult.unwrapValue();
-        AbstractValue resultValue;
-
-        if (node.op.isIncrementOrDecrement()) {
-            // todo: implement increment/decrement logic
-            // Diese Operationen erfordern, dass node.value ein modifizierbarer Knoten (L-Value, z.B. IdentifierNode) ist.
-            // Da der Besucher hier nur den R-Value holt, werfen wir eine EvalException.
-            // Die korrekte Logik müsste in einem spezialisierten visitor.visitIdentifier(node) erfolgen.
-            throw new EvalException("Syntax Error: Increment/Decrement operators (++, --) must operate directly on a variable (L-Value), not a resulting expression.");
-        }
-
-        switch (node.op) {
-            case NEGATE:
-                resultValue = value.negate();
-                break;
-
-            case BITWISE_NOT:
-                resultValue = value.bitwiseNot();
-                break;
-
-            case LOGIC_NOT:
-                resultValue = value.logicalNot();
-                break;
-
-            default:
-                throw new EvalException("Unknown unary operator: " + node.op);
-        }
-
-        return EvalResult.value(resultValue);
-    }
-
-    @Override
-    public EvalResult visitIfStmt(IfStmtNode node) {
-        EvalResult conditionResult = node.condition.accept(this);
-
-        if (!conditionResult.is(EvalResult.ResultType.VALUE)) {
-            throw new EvalException("If-condition did not evaluate to a value but to " + conditionResult.type);
-        }
-
-        AbstractValue conditionValue = conditionResult.unwrapValue();
-
-        if (!(conditionValue instanceof BooleanValue)) {
-            throw new EvalException("Type error: If-condition must evaluate to a BooleanValue, but received " + conditionValue.getClass().getSimpleName());
-        }
-
-        boolean condition = (boolean) conditionValue.getNativeAbstractValue();
-        EvalResult branchResult = null;
-
-        if (condition) {
-            branchResult = node.thenStatement.accept(this);
-        } else if (node.elseBranch != null) {
-            branchResult = node.elseBranch.accept(this);
-        }
-
-        if (branchResult != null && branchResult.isBreaking()) {
-            return branchResult;
-        }
-
-        return EvalResult.normal();
-    }
-
-    @Override
-    public EvalResult visitIdentifier(IdentifierNameNode node) {
-        AbstractValue value = env.getVar(node.identifier);
-
-        return EvalResult.value(value);
-    }
-
-    @Override
-    public EvalResult visitWhileStmt(WhileStmtNode node) {
-        Environment env = new Environment(this.env, Environment.Visibility.NORMAL);
-        this.env = env; // New scope for the while loop
-
-        EvalResult result;
-
-        while (true) {
-            EvalResult _condition = node.condition.accept(this);
-            if (!_condition.is(EvalResult.ResultType.VALUE)) {
-                throw new EvalException("While-condition did not evaluate to a value but to " + _condition.type);
+        enterClosure();
+        try {
+            EvalResult last = EvalResult.nullValue();
+            for (Stmt stmt : node.statements) {
+                last = stmt.accept(this);
+                if (last.isBreaking()) break;
             }
-            AbstractValue conditionValue = _condition.unwrapValue();
-            if (!(conditionValue.getNativeAbstractValue() instanceof Boolean)) {
-                throw new EvalException("Type error: While-condition must evaluate to a BooleanValue, but received " + conditionValue.getNativeAbstractValue().getClass().getSimpleName());
-            }
-
-            boolean condition = (Boolean) conditionValue.getNativeAbstractValue();
-
-            if (condition) {
-                EvalResult bodyResult = node.body.accept(this);
-
-                if (bodyResult.is(EvalResult.ResultType.BREAK)) {
-                    result = EvalResult.normal();
-                    break;
-                } else if (bodyResult.is(EvalResult.ResultType.CONTINUE)) {
-                    throw new EvalException("Continue statement not supported yet in while loops.");
-                } else if (bodyResult.is(EvalResult.ResultType.RETURN)) {
-                    result = bodyResult;
-                    break;
-                }
-            } else {
-                result = EvalResult.normal();
-                break;
-            }
+            return last;
+        } finally {
+            exitClosure();
         }
-
-        this.env = env.parent; // Restore previous environment
-        return result;
     }
 
     @Override
-    public EvalResult visitBlockExpr(BlockExpr node) {
-        Environment env = new Environment(this.env, Environment.Visibility.NORMAL);
-        this.env = env; // New scope for the block expression
-
-        EvalResult result = null;
-
-        for (ASTNode stmt : node.statements) {
-            EvalResult stmtResult = stmt.accept(this);
-            if (stmtResult.isBreaking()) {
-                result = stmtResult;
-                break;
-            }
-        }
-
-        if (result == null) {
-            result = EvalResult.value(NullValue.getInstance()); // null because block EXPR must return a value, Normal otherwise
-        }
-
-        this.env = env.parent; // Restore previous environment
-
-        return result;
+    public EvalResult visitVariableDecl(VariableDecl node) {
+        assign(node.name, NullValue.getInstance());
+        return EvalResult.nullValue();
     }
 
     @Override
-    public EvalResult visitBlockStmt(BlockStmt node) {
-        Environment env = new Environment(this.env, Environment.Visibility.NORMAL);
-        this.env = env; // New scope for the block statement
-        EvalResult result = null;
-
-        if (!(node instanceof VirtualBlockExpr)) {
-            for (ASTNode stmt : node.statements) {
-                EvalResult stmtResult = stmt.accept(this);
-
-                if (stmtResult.isBreaking()) {
-                    result = stmtResult;
-                    break;
-                }
-            }
-            if (result == null) {
-                result = EvalResult.normal();
-            }
-        } else {
-            result = ((VirtualBlockExpr) node).execute(this.env);
-        }
-
-        this.env = env.parent; // Restore previous environment
-        return result;
-    }
-
-    @Override
-    public EvalResult visitFunctionDecl(FunctionDeclNode node) {
-        String name = node.name.identifier;
-
-        if (env.assnExists(name, false)) {
-            throw new EvalException("Function or variable named \"" + name + "\" already exists");
-        }
-
-        env.defineFunction(name, node);
-
-        return EvalResult.normal(); // todo: return normal or reference?
-    }
-
-    @Override
-    public EvalResult visitFunctionCall(FunctionCallNode node) {
-        String name;
-        if (node.callee instanceof IdentifierNameNode) {
-            name = ((IdentifierNameNode) node.callee).identifier;
-        } else {
-            EvalResult calleeResult = node.callee.accept(this);
-            if (!calleeResult.is(EvalResult.ResultType.VALUE)) {
-                throw new EvalException("Function call callee did not evaluate to a value but to " + calleeResult.type);
-            }
-            AbstractValue calleeValue = calleeResult.unwrapValue();
-            if (!(calleeValue instanceof StringValue)) {
-                throw new EvalException("Function call callee must evaluate to a StringValue representing the function name.");
-            }
-            name = (String) calleeValue.getNativeAbstractValue();
-        }
-
-        if (!env.funcExists(name, true)) {
-            throw new EvalException("Function named \"" + name + "\" doesn't exist in this context!");
-        }
-
-        FunctionDeclNode fnDecl = env.getFunction(name);
-        Environment currentEnv = this.env;
-//        Environment parent = this.env.findParentEnvironment(); // Finds the first environment that was not jumped to
-        Environment parent = globalEnv; // todo: fix - but for now keep global parent scope for functions
-        Environment newEnv = new Environment(parent, Environment.Visibility.JUMP);
-//        this.env = new Environment(parent, Environment.Visibility.JUMP);
-
-        if (node.parameters.size() != fnDecl.parameters.size()) {
-            throw new EvalException("Function \"" + name + "\" expects " + fnDecl.parameters.size() +
-                    " parameters, but " + node.parameters.size() + " were provided.");
-        }
-
-        // Evaluate and bind parameters while keeping old env for evaluation
-        for (int i=0; i<node.parameters.size(); i++) {
-            VariableDeclNode formal = fnDecl.parameters.get(i);
-            Expr actual = node.parameters.get(i);
-
-            EvalResult actualValue = actual.accept(this);
-            if (!actualValue.is(EvalResult.ResultType.VALUE)) {
-                throw new EvalException("Function parameter did not evaluate to a value but to " + actualValue.type);
-            }
-
-            String formalName = formal.name.identifier;
-
-            if (newEnv.varExists(formalName, false)) {
-                throw new EvalException("Parameter name \"" + formalName + "\" already exists in function scope.");
-            }
-
-            AbstractValue actualUnwrapped = actualValue.unwrapValue();
-            newEnv.defineVar(formalName, actualUnwrapped);
-//            System.out.println("Defined parameter \"" + formalName + "\" with value: " + actualUnwrapped.getNativeAbstractValue());
-        }
-
-        EvalResult res;
-        this.env = newEnv; // Switch to function environment for body execution
-
-        if (fnDecl.isBuiltin) {
-            VirtualBlockExpr builtIn = (VirtualBlockExpr) fnDecl.body;
-
-            res = builtIn.execute(this.env);
-        }
-        else {
-            res = fnDecl.body.accept(this);
-        }
-
-        this.env = currentEnv; // Restore previous environment
-
-        if (res.is(EvalResult.ResultType.RETURN)) {
-            return EvalResult.value(res.unwrapReturnValue()); // terminiere return signal da funktion beendet
-        }
-
-        if (res.isBreaking()) {
-            throw new EvalException("Unexpected break/continue statement outside of loop in function \"" + name + "\".");
-        }
-
-        return EvalResult.value(NullValue.getInstance()); // functions return null if no return statement is executed
-    }
-
-    @Override
-    public EvalResult visitReturn(ReturnStmtNode node) {
-        EvalResult returnValueResult = node.returnValue.accept(this);
-        if (returnValueResult.is(EvalResult.ResultType.NORMAL)) {
-            throw new EvalException("Return statement must return a value.");
-        }
-
-        if (!returnValueResult.is(EvalResult.ResultType.VALUE)) {
-            // break/continue/return signal weiterleiten (geht nur wenn: return { break; } etc.)
-            return returnValueResult;
-        }
-
-        AbstractValue value = returnValueResult.unwrapValue();
-
-        return EvalResult.returnValue(value);
-    }
-
-    @Override
-    public EvalResult visitResult(ResultStmtNode node) {
-        EvalResult resultValueResult = node.resultValue.accept(this);
-        if (resultValueResult.is(EvalResult.ResultType.NORMAL)) {
-            throw new EvalException("Result statement must return a value.");
-        }
-
-        if (!resultValueResult.is(EvalResult.ResultType.VALUE)) {
-            // break/continue/return signal weiterleiten (geht nur wenn: result { break; } etc.)
-            return resultValueResult;
-        }
-
-        AbstractValue value = resultValueResult.unwrapValue();
-        return EvalResult.value(value);
-    }
-
-    @Override
-    public EvalResult visitVariableDef(VariableDefNode node) {
-        String name = node.name.identifier;
-
-        if (env.assnExists(name, false)) {
-            throw new EvalException("Function or variable named \"" + name + "\" already exists");
-        }
-
+    public EvalResult visitVariableDef(VariableDef node) {
         EvalResult value = node.initialValue.accept(this);
+        assign(node.name, value.unwrapValue());
+        return value;
+    }
 
-        if (value.is(EvalResult.ResultType.NORMAL)) {
-            throw new EvalException("Variable initialization must return a value.");
+    @Override
+    public EvalResult visitAssign(AssignExpr node) {
+        EvalResult value = node.value.accept(this);
+
+        if (node.target instanceof VariableExpr) { // simple variable assignment
+            assign(((VariableExpr) node.target).name, value.unwrapValue());
+        } else if (node.target instanceof FieldAccessExpr) { // field assignment
+            throw new NotImplementedException("Field assignment not implemented yet");
+            /*EvalResult object = ((FieldAccessExpr) node.target).object.accept(this);
+            if (!object.isObject()) throw new EvalException("Cannot assign to non-object field");
+            object.asObject().setField(((FieldAccessExpr) node.target).field.identifier, value); */
+        } else {
+            throw new EvalException("Invalid assignment target");
         }
-
-        if (value.isBreaking()) {
-            throw new EvalException("Variable initialization cannot contain break/continue/return statements.");
-        }
-
-        AbstractValue initValue = value.unwrapValue();
-        env.defineVar(name, initValue);
 
         return value;
     }
 
     @Override
-    public EvalResult visitVariableAssn(VariableAssnNode node) {
-        String name = node.name.identifier;
-
-        EvalResult value = node.newValue.accept(this);
-
-        if (value.is(EvalResult.ResultType.NORMAL)) {
-            throw new EvalException("Variable assignment must return a value.");
-        }
-        if (value.isBreaking()) {
-            throw new EvalException("Variable assignment cannot contain break/continue/return statements.");
-        }
-        AbstractValue initValue = value.unwrapValue();
-        env.assignVar(name, initValue);
-
-        return value;
+    public EvalResult visitVariableExpr(VariableExpr node) {
+        return EvalResult.value(resolve(node.name));
     }
 
     @Override
-    public EvalResult visitVariableDecl(VariableDeclNode node) {
-        String name = node.name.identifier;
-        if (env.assnExists(name, false)) {
-            throw new EvalException("Function or Variable named \"" + name + "\" already exists");
-        }
-
-        env.defineVar(name, null);
-
-        return EvalResult.normal();
+    public EvalResult visitFieldAccessExpr(FieldAccessExpr node) {
+        throw new NotImplementedException("Field access expression not implemented yet");
+        /* EvalResult object = node.object.accept(this);
+        if (!object.isObject()) throw new EvalException("Field access on non-object");
+        return object.asObject().get(node.field.identifier); */
     }
 
     @Override
-    public EvalResult visitExprStmt(ExprStmtNode node) {
-        EvalResult res = node.expr.accept(this);
-        if (res.isBreaking()) {
-            return res;
-        }
-        return EvalResult.normal();
+    public EvalResult visitFunctionDecl(FunctionDecl node) {
+        assign(node.name, new FunctionValue(node, closures.peek()));
+
+        return EvalResult.nullValue();
     }
 
+    /*@Override
+    public EvalResult visitFunctionCall(FunctionCall node) {
+        EvalResult callee = node.callee.accept(this);
+        if (!callee.isFunction()) throw new EvalException("Not a function");
+
+        FunctionDecl func = callee.asFunction().getDecl();
+        Closure definitionClosure = callee.asFunction().getClosure();
+
+        if (func.parameters.size() != node.arguments.size()) { // todo: make this better, positional arguments?
+            throw new EvalException("Argument count mismatch for function " + func.name);
+        }
+
+        Closure callClosure = new Closure(definitionClosure);
+        enterClosure(callClosure);
+
+        for (int i = 0; i < func.parameters.size(); i++) {
+            VariableDecl param = func.parameters.get(i);
+            EvalResult argVal = node.arguments.get(i).accept(this);
+            assign(param.name, argVal.unwrapValue());
+        }
+
+        EvalResult result = func.body.accept(this);
+        exitClosure();
+
+        if (result.is(EvalResult.ResultType.RETURN)) return EvalResult.value(result.unwrapReturnValue());
+        return result;
+    } */
+    @Override
+    public EvalResult visitFunctionCall(FunctionCall node) {
+        // 1. Zuerst die Funktion suchen, SOLANGE wir noch im alten Scope sind!
+        EvalResult callee = node.callee.accept(this);
+        if (!callee.isFunction()) throw new EvalException("Not a function");
+
+        FunctionDecl func = callee.asFunction().getDecl();
+        Closure definitionClosure = callee.asFunction().getClosure();
+
+        if (func.parameters.size() != node.arguments.size()) {
+            throw new EvalException("Argument count mismatch for function " + func.name);
+        }
+
+        // 2. Argumente auswerten, SOLANGE wir noch im alten Scope sind!
+        // (Sonst könnten Argumente keine Variablen von "außen" lesen)
+        List<AbstractValue> evaluatedArgs = new ArrayList<>();
+        for (Expr arg : node.arguments) {
+            evaluatedArgs.add(arg.accept(this).unwrapValue());
+        }
+
+        // 3. Jetzt erst in den neuen Scope wechseln
+        Closure callClosure = new Closure(definitionClosure);
+        enterClosure(callClosure);
+
+        // 4. Parameter in der neuen Closure zuweisen
+        for (int i = 0; i < func.parameters.size(); i++) {
+            assign(func.parameters.get(i).name, evaluatedArgs.get(i));
+        }
+
+        // 5. Body ausführen
+        EvalResult result = func.body.accept(this);
+        exitClosure();
+
+        if (result.is(EvalResult.ResultType.RETURN)) {
+            return EvalResult.value(result.unwrapReturnValue());
+        }
+        return result;
+    }
+
+    @Override
+    public EvalResult visitClassDecl(ClassDecl node) {
+        throw new NotImplementedException("Class declaration not implemented yet");
+
+        /* Map<String, EvalResult> fields = new HashMap<>();
+        Map<String, EvalResult> methods = new HashMap<>();
+
+        for (VariableDecl field : node.fields) {
+            fields.put(field.name, EvalResult.defaultValue(field.type.name));
+        }
+        for (FunctionDecl method : node.methods) {
+            methods.put(method.name, EvalResult.value(new FunctionValue(method, new HashMap<>(scopes.peek()))));
+        }
+
+        ObjectValue obj = new ObjectValue();
+        obj.putAll(fields);
+        obj.putAll(methods);
+
+        define(node.name, EvalResult.value(obj));
+        return EvalResult.nullValue(); */
+    }
+
+    @Override
+    public EvalResult visitLiteralInt(LiteralInt node) { return EvalResult.fromInt(node.value); }
+    @Override
+    public EvalResult visitLiteralFloat(LiteralFloat node) { return EvalResult.fromFloat(node.value); }
+    @Override
+    public EvalResult visitLiteralBool(LiteralBool node) { return EvalResult.fromBool(node.value); }
+    @Override
+    public EvalResult visitLiteralString(LiteralString node) { return EvalResult.fromString(node.value); }
+
+    @Override
+    public EvalResult visitBinaryOp(BinaryOp node) {
+        EvalResult left = node.lhs.accept(this);
+        EvalResult right = node.rhs.accept(this);
+        return left.applyBinary(node.op, right);
+    }
+
+    @Override
+    public EvalResult visitUnaryOp(UnaryOp node) {
+        EvalResult operand = node.value.accept(this);
+        return operand.applyUnary(node.op);
+    }
+
+    @Override
+    public EvalResult visitIf(IfStmt node) {
+        EvalResult cond = node.condition.accept(this);
+        if ((boolean) cond.asBoolean().getNativeAbstractValue()) return node.thenBranch.accept(this);
+        if (node.elseBranch != null) return node.elseBranch.accept(this);
+        return EvalResult.nullValue();
+    }
+
+    @Override
+    public EvalResult visitWhile(WhileStmt node) {
+        EvalResult last = EvalResult.nullValue();
+        while ((boolean) node.condition.accept(this).asBoolean().getNativeAbstractValue()) {
+            last = node.body.accept(this);
+            if (last.isBreaking()) break;
+        }
+        return last;
+    }
+
+    @Override
+    public EvalResult visitReturn(ReturnStmt node) {
+        if (node.returnValue != null) return EvalResult.returnValue(node.returnValue.accept(this).unwrapValue());
+        return EvalResult.returnValue(null);
+    }
+
+    @Override
+    public EvalResult visitExpr(ExprStmt node) {
+        return node.expr.accept(this);
+    }
 }

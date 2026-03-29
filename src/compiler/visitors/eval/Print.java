@@ -2,27 +2,27 @@ package compiler.visitors.eval;
 
 import compiler.parser.ast.*;
 import compiler.visitors.eval.values.literal.NullValue;
+import compiler.visitors.eval.values.memory.Closure;
 
 import java.util.Collections;
 
-public class Print extends FunctionDeclNode {
+public class Print extends FunctionDecl {
 
     public Print() {
         super(
-                new IdentifierNameNode("print"),
-                Collections.singletonList(new VariableDeclNode(
-                        new IdentifierNameNode("string"),
-                        new IdentifierNameNode("text")
+                new Type("void"),
+                "print",
+                Collections.singletonList(new VariableDecl(
+                        new Type("string"),
+                        "text"
                 )),
                 new VirtualBlockExpr() {
                     @Override
-                    public EvalResult execute(Environment env) {
-                        System.out.println(env.getVar("text").toString());
+                    public EvalResult execute(Closure closure) {
+                        System.out.println(closure.getValueParent("text").toString());
                         return EvalResult.returnValue(NullValue.getInstance());
                     }
-                },
-                new IdentifierNameNode("void"),
-                true
+                }
         );
     }
 }

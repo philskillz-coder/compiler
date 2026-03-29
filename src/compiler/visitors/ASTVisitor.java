@@ -3,29 +3,37 @@ package compiler.visitors;
 import compiler.parser.ast.*;
 
 public interface ASTVisitor<R> {
-    R visitProgramNode(ProgramNode node);
-    R visitVariableDecl(VariableDeclNode node);
-    R visitVariableDef(VariableDefNode node);
-    R visitVariableAssn(VariableAssnNode node); // todo: this is kind of an binary op
+    // Programm
+    R visitProgram(Program node);
 
-    R visitLiteralInt(LiteralIntNode node);
-    R visitLiteralFloat(LiteralFloatNode node);
-    R visitLiteralString(LiteralStringNode node);
-    R visitLiteralBool(LiteralBoolNode node);
+    // Variablen
+    R visitVariableDecl(VariableDecl node);
+    R visitVariableDef(VariableDef node);
 
-    R visitBinaryOp(BinaryOpNode node);
-    R visitUnaryOp(UnaryOpNode node);
-    R visitIfStmt(IfStmtNode node);
-    R visitWhileStmt(WhileStmtNode node);
+    // Literale
+    R visitLiteralInt(LiteralInt node);
+    R visitLiteralFloat(LiteralFloat node);
+    R visitLiteralString(LiteralString node);
+    R visitLiteralBool(LiteralBool node);
 
-    R visitBlockExpr(BlockExpr node);
-    R visitBlockStmt(BlockStmt node);
-    R visitClassDecl(ClassDeclNode node);
-    R visitFunctionDecl(FunctionDeclNode node);
-    R visitFunctionCall(FunctionCallNode node);
-    R visitReturn(ReturnStmtNode node);
-    R visitResult(ResultStmtNode node);
-    R visitExprStmt(ExprStmtNode node);
+    // Operatoren
+    R visitBinaryOp(BinaryOp node);
+    R visitUnaryOp(UnaryOp node);
+    R visitAssign(AssignExpr node);
 
-    R visitIdentifier(IdentifierNode node);
+    // Statements
+    R visitIf(IfStmt node);
+    R visitWhile(WhileStmt node);
+    R visitReturn(ReturnStmt node);
+    R visitExpr(ExprStmt node);
+    R visitBlock(Block node);
+
+    // Funktionen & Klassen
+    R visitFunctionDecl(FunctionDecl node);
+    R visitFunctionCall(FunctionCall node);
+    R visitClassDecl(ClassDecl node);
+
+    // Variable references
+    R visitVariableExpr(VariableExpr node);
+    R visitFieldAccessExpr(FieldAccessExpr node);
 }

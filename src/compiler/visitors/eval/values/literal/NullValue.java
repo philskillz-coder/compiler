@@ -26,13 +26,18 @@ public class NullValue extends LiteralValue {
 
         switch (op) {
             case EQUAL:
-                return new BooleanValue(isOtherNull);
+                return new BoolValue(isOtherNull);
 
             case NOT_EQUAL:
-                return new BooleanValue(!isOtherNull);
+                return new BoolValue(!isOtherNull);
 
             default:
                 throw new EvalException("Unsupported comparison operator '" + op + "' for Null.");
         }
+    }
+
+    @Override
+    public AbstractValue asBoolean() {
+        return new BoolValue(false);
     }
 }

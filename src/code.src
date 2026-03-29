@@ -1,0 +1,16 @@
+func void a() {
+    var int a = 3;
+    var int b = 3;
+    return a*b;
+}
+
+func void b() {
+    var int c = 3;
+    return c*a();
+}
+
+func void c(int d) {
+    return b()*d;
+}
+
+print(c(2));

@@ -1,7 +1,7 @@
 package compiler.parser;
 
 import compiler.parser.ast.*;
-import compiler.parser.ast.ExprStmtNode;
+import compiler.parser.ast.ExprStmt;
 import compiler.lexer.Token;
 import compiler.lexer.TokenType;
 
@@ -17,7 +17,7 @@ public class TreeBuilder {
         this.tokens = tokens;
     }
 
-    public ProgramNode parse() {
+    public Program parse() {
         consume(TokenType.SOF);
         List<Stmt> declarations = new ArrayList<>();
 
@@ -25,18 +25,18 @@ public class TreeBuilder {
             declarations.add(parseDeclaration());
         }
 
-        return new ProgramNode(declarations);
+        return new Program(declarations);
     }
 
     private Stmt parseDeclaration() {
+        if (match(TokenType.KW_CLASS)) {
+            return parseClassDeclaration();
+        }
         if (match(TokenType.KW_FUNC)) {
-            return parseFunctionDeclaration(); // Gibt FunctionDeclNode zurück
+            return parseFunctionDeclaration();
         }
         if (match(TokenType.KW_VAR)) {
             return parseVariableDeclaration();
-        }
-        if (match(TokenType.KW_CLASS)) {
-            return parseClassDeclaration();
         }
 
         // Wenn es keine Deklaration ist, muss es eine Anweisung sein,
@@ -47,7 +47,6 @@ public class TreeBuilder {
         if (match(TokenType.KW_IF)) return parseIfStatement();
         if (match(TokenType.KW_WHILE)) return parseWhileStatement();
         if (match(TokenType.KW_RETURN)) return parseReturnStatement();
-        if (match(TokenType.KW_RESULT)) return parseResultStatement();
 
         // Falls es kein Statement ist, behandle es als Anweisung
         return parseExpressionStatement();
@@ -61,14 +60,14 @@ public class TreeBuilder {
         return parseStatement();
     }
 
-    private ExprStmtNode parseExpressionStatement() {
+    private ExprStmt parseExpressionStatement() {
         Expr expr = parseExpression();
         consume(TokenType.SEMICOLON, "Expected semicolon after expression.");
 
-        return new ExprStmtNode(expr);
+        return new ExprStmt(expr);
     }
 
-    private BlockStmt parseBlockStatement() {
+    private Block parseBlockStatement() {
         List<Stmt> nodes = new ArrayList<>();
 
         while (!peekMatch(TokenType.CURLY_CLOSE) && !isAtEnd()) {
@@ -77,99 +76,85 @@ public class TreeBuilder {
 
         consume(TokenType.CURLY_CLOSE, "Expected closing bracket for block statement.");
 
-        return new BlockStmt(nodes);
+        return new Block(nodes);
     }
 
-    private BlockExpr parseBlockExpression() {
-        List<Stmt> nodes = new ArrayList<>();
+    private ClassDecl parseClassDeclaration() {
+        Token<?> nameToken = consume(TokenType.IDENTIFIER);
+        String name = nameToken.getValue().toString();
+
+        consume(TokenType.CURLY_OPEN, "Expected '{' for class body.");
+
+        List<VariableDecl> fields = new ArrayList<>();
+        List<FunctionDecl> methods = new ArrayList<>();
+        List<ClassDecl> innerClasses = new ArrayList<>();
 
         while (!peekMatch(TokenType.CURLY_CLOSE) && !isAtEnd()) {
-            nodes.add(parseDeclaration());
-        }
-
-        consume(TokenType.CURLY_CLOSE, "Expected closing bracket for block expression.");
-
-        return new BlockExpr(nodes);
-    }
-
-    private ClassDeclNode parseClassDeclaration() {
-        Token<?> amToken = null;
-        Token<?> bmToken = null;
-        Token<?> nameToken = null;
-
-        if (peekMatch(TokenType.KW_AM)) {
-            amToken = consume(TokenType.KW_AM);
-        }
-
-        if (peekMatch(TokenType.KW_BM)) {
-            bmToken = consume(TokenType.KW_BM);
-        }
-
-        nameToken = consume(TokenType.IDENTIFIER, "Expected class name after class declaration.");
-
-        consume(TokenType.CURLY_OPEN, "Expected opening bracket for class body.");
-        BlockStmt body = parseBlockStatement();
-
-        return new ClassDeclNode(
-                amToken != null ? new IdentifierAccessNode(amToken.getValue().toString()) : null,
-                bmToken != null ? new IdentifierBoundsNode(bmToken.getValue().toString()) : null,
-                new IdentifierNameNode(nameToken.getValue().toString()),
-                body
-        );
-    }
-
-    // todo: fix variable ref/ variable decl:
-    private FunctionDeclNode parseFunctionDeclaration() {
-        Token<?> returnTypeIdentifier = consume(TokenType.IDENTIFIER);
-        Token<?> nameToken = consume(TokenType.IDENTIFIER);
-
-        consume(TokenType.PAREN_OPEN, "Expected opening parenthesis after function name declaration.");
-        List<VariableDeclNode> parameters = new ArrayList<>();
-
-        while (!peekMatch(TokenType.PAREN_CLOSE) && !isAtEnd()) {
-            VariableDeclNode formalParameter = parseVariableCore();
-            parameters.add(formalParameter);
-
-            if (!peekMatch(TokenType.PAREN_CLOSE)) {
-                consume(TokenType.COMMA, "Expected comma after function parameter declaration.");
+            if (match(TokenType.KW_VAR)) {
+                fields.add((VariableDecl) parseVariableDeclaration());
+            } else if (match(TokenType.KW_FUNC)) {
+                methods.add(parseFunctionDeclaration());
+            } else if (match(TokenType.KW_CLASS)) {
+                innerClasses.add(parseClassDeclaration());
+            } else {
+                throw new ParseException("Unexpected token in class body: " + peek());
             }
         }
 
+        consume(TokenType.CURLY_CLOSE, "Expected '}' after class body.");
+
+        return new ClassDecl(name, fields, methods, innerClasses);
+    }
+
+
+    private FunctionDecl parseFunctionDeclaration() {
+        Token<?> returnTypeToken = consume(TokenType.IDENTIFIER);
+        Type returnType = new Type(returnTypeToken.getValue().toString());
+
+        Token<?> nameToken = consume(TokenType.IDENTIFIER);
+        String name = nameToken.getValue().toString();
+
+        consume(TokenType.PAREN_OPEN, "Expected '(' after function name.");
+        List<VariableDecl> parameters = new ArrayList<>();
+        while (!peekMatch(TokenType.PAREN_CLOSE) && !isAtEnd()) {
+            parameters.add(parseVariableCore());
+            if (!peekMatch(TokenType.PAREN_CLOSE)) {
+                consume(TokenType.COMMA, "Expected ',' between parameters.");
+            }
+        }
         consume(TokenType.PAREN_CLOSE);
 
-        Stmt body = parseBody();
+        Block body = (Block) parseBody();
 
-        return new FunctionDeclNode(new IdentifierNameNode(nameToken.getValue().toString()), parameters, body, new IdentifierNameNode(returnTypeIdentifier.getValue().toString()));
+        return new FunctionDecl(returnType, name, parameters, body);
     }
 
     // Parst nur den Typ und Namen einer Variablen (oder eines Parameters)
-    private VariableDeclNode parseVariableCore() {
+    private VariableDecl parseVariableCore() {
         Token<?> typeToken = consume(TokenType.IDENTIFIER);
-        IdentifierNameNode typeIdentifierNode = new IdentifierNameNode(typeToken.getValue().toString());
+        Type type = new Type(typeToken.getValue().toString());
 
         Token<?> nameToken = consume(TokenType.IDENTIFIER);
-        IdentifierNameNode nameNode = new IdentifierNameNode(nameToken.getValue().toString());
+        String name = nameToken.getValue().toString();
 
-        return new VariableDeclNode(typeIdentifierNode, nameNode);
+        return new VariableDecl(type, name);
     }
 
     // [var] TypeRef name
-    private VariableDeclNode parseVariableDeclaration() {
-        VariableDeclNode decl = parseVariableCore();
+    private Stmt parseVariableDeclaration() {
+        VariableDecl decl = parseVariableCore();
 
         if (match(TokenType.OP_ASSIGN)) {
             Expr initialValue = parseExpression();
             consume(TokenType.SEMICOLON, "Erwarte ';' nach der Variablendefinition.");
-
-            return new VariableDefNode(decl.typeIdentifier, decl.name, initialValue);
-
-        } else { // Einfache Deklaration
+            return new VariableDef(decl.type, decl.name, initialValue);
+        } else {
             consume(TokenType.SEMICOLON, "Erwarte ';' nach der Variablendeklaration.");
             return decl;
         }
     }
 
-    private IfStmtNode parseIfStatement() {
+    private IfStmt parseIfStatement() {
         // 1. Bedingung parsen: 'if' (Expression)
         consume(TokenType.PAREN_OPEN);
         Expr condition = parseExpression();
@@ -196,19 +181,19 @@ public class TreeBuilder {
         }
 
         // Die gesamte Struktur wird in einem einzigen, rekursiven Knoten zurückgegeben.
-        return new IfStmtNode(condition, thenBranch, elseBranch);
+        return new IfStmt(condition, thenBranch, elseBranch);
     }
 
-    private WhileStmtNode parseWhileStatement() {
+    private WhileStmt parseWhileStatement() {
         consume(TokenType.PAREN_OPEN);
         Expr cond = parseExpression();
         consume(TokenType.PAREN_CLOSE);
         Stmt body = parseBody();
 
-        return new WhileStmtNode(cond, body);
+        return new WhileStmt(cond, body);
     }
 
-    private ReturnStmtNode parseReturnStatement() {
+    private ReturnStmt parseReturnStatement() {
         Expr expr = null;
         if (!peekMatch(TokenType.SEMICOLON)) {
             expr = parseExpression();
@@ -216,23 +201,8 @@ public class TreeBuilder {
 
         consume(TokenType.SEMICOLON, "Erwarte ';' nach dem 'return'-Statement.");
 
-        return new ReturnStmtNode(expr);
+        return new ReturnStmt(expr);
     }
-
-    private ResultStmtNode parseResultStatement() {
-        Expr expr;
-        if (peek().getType() == TokenType.SEMICOLON) {
-            expr = null;
-        } else {
-            expr = parseExpression();
-        }
-
-        consume(TokenType.SEMICOLON);
-
-        return new ResultStmtNode(expr);
-    }
-
-
 
     /*
     Präzedenz:
@@ -253,13 +223,14 @@ public class TreeBuilder {
     15. Primär: Zahlen, Strings, Variablen, Geklammerte Ausdrücke (expr)
     */
 
+    // ((A+B)+C)
     private Expr parseBinaryLeft(Supplier<Expr> nextLevel, TokenType... tokenTypes) {
         Expr lhs = nextLevel.get();
 
         while (match(tokenTypes) && !isAtEnd()) {
             Token<?> op = tokens.get(current-1);
             Expr rhs = nextLevel.get();
-            lhs = new BinaryOpNode(
+            lhs = new BinaryOp(
                     mapTokenToBinaryOp(op.getType()),
                     lhs, rhs
             );
@@ -268,13 +239,14 @@ public class TreeBuilder {
         return lhs;
     }
 
+    // (a = (b = 1))
     private Expr parseBinaryRight(Supplier<Expr> nextLevel, TokenType... tokenTypes) {
         Expr lhs = nextLevel.get();
 
         if (match(tokenTypes)) {
             Token<?> op = tokens.get(current-1);
             Expr rhs = parseBinaryRight(nextLevel, tokenTypes);
-            return new BinaryOpNode(mapTokenToBinaryOp(op.getType()), lhs, rhs);
+            return new BinaryOp(mapTokenToBinaryOp(op.getType()), lhs, rhs);
         }
 
         return lhs;
@@ -290,14 +262,12 @@ public class TreeBuilder {
         Expr lhs = parseLogicalOr();
 
         if (match(TokenType.OP_ASSIGN)) {
-            if (!(lhs instanceof IdentifierNameNode)) {
-                System.err.println("Ungültiges Zuweisungsziel.");
-                return null;
+            if (!(lhs instanceof VariableExpr || lhs instanceof FieldAccessExpr)) {
+                throw new ParseException("Invalid assignment target.");
             }
 
-            Expr rhs = parseAssignment(); // rekursion wegen rechts-assoziativität
-            IdentifierNameNode target = (IdentifierNameNode) lhs;
-            return new VariableAssnNode(target, rhs);
+            Expr rhs = parseAssignment();
+            return new AssignExpr(lhs, rhs);
         }
 
         return lhs;
@@ -411,7 +381,7 @@ public class TreeBuilder {
             UnaryOperator opEnum = mapTokenToUnaryOp(operatorToken.getType());
 
             // Erstellt den UnaryOpNode (zwei Felder: Operator, Operand)
-            return new UnaryOpNode(opEnum, operand);
+            return new UnaryOp(opEnum, operand);
         }
 
         // Wenn kein unärer Operator gefunden wurde, gehe zur nächsthöheren Stufe
@@ -427,7 +397,7 @@ public class TreeBuilder {
                 value = parseCallSuffix(value);
             } else if (match(TokenType.OP_INCREMENT, TokenType.OP_DECREMENT)) { // post inc/dec
                 UnaryOperator op = mapTokenToUnaryOp(tokens.get(current-1).getType());
-                value = new UnaryOpNode(op, value);
+                value = new UnaryOp(op, value);
             } else {
                 break;
             }
@@ -471,53 +441,38 @@ public class TreeBuilder {
         consume(TokenType.PAREN_CLOSE);
 
         // Erstelle den CallNode
-        return new FunctionCallNode(callee, arguments);
+        return new FunctionCall(callee, arguments);
     }
 
     // 15. Primär: Literal, Variablen, Klammern
     private Expr parsePrimary() {
         if (match(TokenType.INT_LITERAL)) {
-            // Holen des generischen Tokens, um auf den Wert zuzugreifen
             Token<?> token = tokens.get(current - 1);
-            // Casten des von getValue() zurückgegebenen Object auf den erwarteten Typ (Integer/int)
-            return new LiteralIntNode((Integer) token.getValue());
+            return new LiteralInt((Integer) token.getValue());
         }
-
         if (match(TokenType.FLOAT_LITERAL)) {
             Token<?> token = tokens.get(current - 1);
-            // Casten auf Double
-            return new LiteralFloatNode((Float) token.getValue());
+            return new LiteralFloat((Float) token.getValue());
         }
-
         if (match(TokenType.STRING_LITERAL)) {
             Token<?> token = tokens.get(current - 1);
-            // Casten auf String
-            return new LiteralStringNode((String) token.getValue());
+            return new LiteralString((String) token.getValue());
         }
-
         if (match(TokenType.BOOL_LITERAL)) {
             Token<?> token = tokens.get(current - 1);
-            // Casten auf Boolean
-            return new LiteralBoolNode((Boolean) token.getValue());
+            return new LiteralBool((Boolean) token.getValue());
         }
-
         if (match(TokenType.IDENTIFIER)) {
             Token<?> token = tokens.get(current - 1);
-            // Casten auf String (Bezeichner-Name)
-            return new IdentifierNameNode((String) token.getValue());
+            return new VariableExpr((String) token.getValue());
         }
-
         if (match(TokenType.PAREN_OPEN)) {
             Expr expr = parseExpression();
-            consume(TokenType.PAREN_CLOSE);
+            consume(TokenType.PAREN_CLOSE, "Expected ')'.");
             return expr;
         }
 
-        if (match(TokenType.CURLY_OPEN)) {
-            return parseBlockExpression();
-        }
-
-        throw new ParseException("Unerwartetes Token:" + "(current=" + current + ")" + " Erwartete ein Literal, Bezeichner oder '('.: " + peek().toString());
+        throw new ParseException("Unexpected token: " + peek());
     }
 
     // --- Token-Management Hilfsfunktionen ---

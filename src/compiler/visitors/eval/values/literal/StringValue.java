@@ -5,45 +5,34 @@ import compiler.visitors.eval.exceptions.EvalException;
 import compiler.visitors.eval.values.AbstractValue;
 import compiler.visitors.eval.values.LiteralValue;
 
-public class StringValue extends LiteralValue {
+public class StringValue extends AbstractValue {
     private final String value;
 
-    public StringValue(String value) {
-        this.value = value;
-    }
+    public StringValue(String value) { this.value = value; }
 
     @Override
-    public Object getNativeAbstractValue() {
-        return this.value;
-    }
+    public Object getNativeAbstractValue() { return value; }
 
     @Override
     public AbstractValue add(AbstractValue other) {
-        return new StringValue(this.value + other.getNativeAbstractValue().toString());
+        if (other instanceof StringValue || other instanceof IntValue || other instanceof FloatValue || other instanceof BoolValue) {
+            return new StringValue(this.value + other.getNativeAbstractValue());
+        }
+        throw new EvalException("Cannot add string and " + other.getClass());
     }
 
     @Override
     public AbstractValue compare(BinaryOperator op, AbstractValue other) {
-        String rhsString = other.getNativeAbstractValue().toString();
-
+        String rhs = other.getNativeAbstractValue().toString();
         switch (op) {
-            case EQUAL:
-                return new BooleanValue(this.value.equals(rhsString));
-            case NOT_EQUAL:
-                return new BooleanValue(!this.value.equals(rhsString));
-
-            case LESS:
-                return new BooleanValue(this.value.compareTo(rhsString) < 0);
-            case GREATER:
-                return new BooleanValue(this.value.compareTo(rhsString) > 0);
-            case LESS_EQUAL:
-                return new BooleanValue(this.value.compareTo(rhsString) <= 0);
-            case GREATER_EQUAL:
-                return new BooleanValue(this.value.compareTo(rhsString) >= 0);
-
-            default:
-                throw new EvalException("Unsupported comparison operator '" + op + "' for String.");
+            case EQUAL: return new BoolValue(this.value.equals(rhs));
+            case NOT_EQUAL: return new BoolValue(!this.value.equals(rhs));
+            default: throw new EvalException("Invalid comparison operator for string: " + op);
         }
     }
 
+    @Override
+    public AbstractValue asBoolean() {
+        return new BoolValue(!this.value.isEmpty());
+    }
 }

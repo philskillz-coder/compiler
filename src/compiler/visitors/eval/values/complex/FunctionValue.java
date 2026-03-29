@@ -1,17 +1,32 @@
 package compiler.visitors.eval.values.complex;
 
-import compiler.parser.ast.FunctionDeclNode;
+import compiler.visitors.eval.values.AbstractValue;
 import compiler.visitors.eval.values.ComplexValue;
+import compiler.parser.ast.FunctionDecl;
+import compiler.visitors.eval.values.memory.Closure;
+
+import java.util.Map;
 
 public class FunctionValue extends ComplexValue {
-    private final FunctionDeclNode functionNode;
+    private final FunctionDecl decl;
+    private final Closure closure;
 
-    public FunctionValue(FunctionDeclNode functionNode) {
-        this.functionNode = functionNode;
+    public FunctionValue(FunctionDecl decl, Closure closure) {
+        this.decl = decl;
+        this.closure = closure;
+    }
+
+    public FunctionDecl getDecl() {
+        return decl;
+    }
+
+    public Closure getClosure() {
+        return closure;
     }
 
     @Override
-    public Object getNativeAbstractValue() {
-        return this.functionNode;
-    }
+    public Object getNativeAbstractValue() { return this; }
+
+    @Override
+    public String toString() { return "<Function " + decl.name + ">"; }
 }

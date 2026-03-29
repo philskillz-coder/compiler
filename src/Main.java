@@ -4,10 +4,13 @@ import compiler.lexer.Tokenizer;
 import compiler.parser.TreeBuilder;
 import compiler.visitors.eval.ASTEvalVisitor;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 
 public class Main {
-    private final String CODE = ""+
+    /*private final String CODE = ""+
         "func int fib(int n) {\n" +
             "    if (n == 0) {\n" +
             "        return 0;\n" +
@@ -27,14 +30,22 @@ public class Main {
             "    return b;\n" +
             "}\n" +
             "\n" +
-            "print(fib(17));";
+            "print(fib(17));"; */
 
     public Main() {
-        Tokenizer t = new Tokenizer(CODE);
+        // read file "code.src"
+        String code;
+        System.out.println("Ich suche hier: " + System.getProperty("user.dir"));
+        try {
+            code = Files.readString(Paths.get("src/code.src"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        Tokenizer t = new Tokenizer(code);
         List<Token<?>> tokens = t.tokenize();
         System.out.println(tokens);
         TreeBuilder tb = new TreeBuilder(tokens);
-        ProgramNode p = tb.parse();
+        Program p = tb.parse();
         p.accept(new ASTEvalVisitor());
     }
 

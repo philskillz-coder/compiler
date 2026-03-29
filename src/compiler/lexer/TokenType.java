@@ -62,13 +62,14 @@ public enum TokenType {
     KW_IF,              // if
     KW_ELSE,            // else
     KW_WHILE,           // while
-    KW_CLASS,           // class
     KW_FUNC,            // func
     KW_RETURN,          // return
-    KW_RESULT,          // result
-
-    KW_BM, // bound-modifier: static (or instance)
-    KW_AM, // access modifier: public/private
+    KW_CLASS,           // class
+    KW_NEW,             // new
+    KW_FINAL,           // final
+    KW_TRY,             // try
+    KW_CATCH,           // catch
+    KW_FINALLY,         // finally
 
     // VII. ZUSTANDS-MARKER
     EOF,                // End Of File

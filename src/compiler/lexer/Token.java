@@ -247,26 +247,22 @@ class TokenKwReturn extends TokenKw {
     public TokenKwReturn() {super("return", TokenType.KW_RETURN);}
 }
 
-class TokenKwResult extends TokenKw {
-    public TokenKwResult() { super("result", TokenType.KW_RESULT);}
+class TokenKwFinal extends TokenKw {
+    public TokenKwFinal() { super("final", TokenType.KW_FINAL); }
 }
 
-abstract class TokenKwBm extends TokenKw {
-    public TokenKwBm(String boundsModifier) { super(boundsModifier, TokenType.KW_BM);}
+class TokenKwNew extends TokenKw {
+    public TokenKwNew() { super("new", TokenType.KW_NEW); }
 }
 
-class TokenKwBmStatic extends TokenKwBm {
-    public TokenKwBmStatic() { super("static"); }
+class TokenKwTry extends TokenKw {
+    public TokenKwTry() { super("try", TokenType.KW_TRY); }
 }
 
-abstract class TokenKwAm extends TokenKw {
-    public TokenKwAm(String accessModifier) { super(accessModifier, TokenType.KW_AM); }
+class TokenKwCatch extends TokenKw {
+    public TokenKwCatch() { super("catch", TokenType.KW_CATCH); }
 }
 
-class TokenKwAmPublic extends TokenKwAm {
-    public TokenKwAmPublic() {super("public"); }
-}
-
-class TokenKwAmPrivate extends TokenKwAm {
-    public TokenKwAmPrivate() {super("private"); }
+class TokenKwFinally extends TokenKw {
+    public TokenKwFinally() { super("finally", TokenType.KW_FINALLY); }
 }
