@@ -85,7 +85,10 @@ public class ASTEvalVisitor implements ASTVisitor<EvalResult> {
         EvalResult value = node.value.accept(this);
 
         if (node.target instanceof VariableExpr) { // simple variable assignment
-            assign(((VariableExpr) node.target).name, value.unwrapValue());
+            String name = ((VariableExpr) node.target).name;
+            if (!closures.peek().setValueParent(name, value.unwrapValue())) {
+                throw new EvalException("Variable not defined: " + name);
+            }
         } else if (node.target instanceof FieldAccessExpr) { // field assignment
             throw new NotImplementedException("Field assignment not implemented yet");
             /*EvalResult object = ((FieldAccessExpr) node.target).object.accept(this);
@@ -214,6 +217,8 @@ public class ASTEvalVisitor implements ASTVisitor<EvalResult> {
     public EvalResult visitLiteralBool(LiteralBool node) { return EvalResult.fromBool(node.value); }
     @Override
     public EvalResult visitLiteralString(LiteralString node) { return EvalResult.fromString(node.value); }
+    @Override
+    public EvalResult visitLiteralNull(LiteralNull node) { return EvalResult.value(NullValue.getInstance()); }
 
     @Override
     public EvalResult visitBinaryOp(BinaryOp node) {

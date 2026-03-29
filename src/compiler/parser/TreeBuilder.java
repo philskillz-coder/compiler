@@ -396,12 +396,13 @@ public class TreeBuilder {
             if (match(TokenType.PAREN_OPEN)) {
                 value = parseCallSuffix(value);
             } else if (match(TokenType.OP_INCREMENT, TokenType.OP_DECREMENT)) { // post inc/dec
-                UnaryOperator op = mapTokenToUnaryOp(tokens.get(current-1).getType());
+                UnaryOperator op = tokens.get(current-1).getType() == TokenType.OP_INCREMENT
+                        ? UnaryOperator.POST_INC
+                        : UnaryOperator.POST_DEC;
                 value = new UnaryOp(op, value);
             } else {
                 break;
             }
-            break;
         }
 
         return value;
@@ -452,7 +453,7 @@ public class TreeBuilder {
         }
         if (match(TokenType.FLOAT_LITERAL)) {
             Token<?> token = tokens.get(current - 1);
-            return new LiteralFloat((Float) token.getValue());
+            return new LiteralFloat(((Double) token.getValue()).floatValue());
         }
         if (match(TokenType.STRING_LITERAL)) {
             Token<?> token = tokens.get(current - 1);
@@ -461,6 +462,9 @@ public class TreeBuilder {
         if (match(TokenType.BOOL_LITERAL)) {
             Token<?> token = tokens.get(current - 1);
             return new LiteralBool((Boolean) token.getValue());
+        }
+        if (match(TokenType.NULL_LITERAL)) {
+            return new LiteralNull();
         }
         if (match(TokenType.IDENTIFIER)) {
             Token<?> token = tokens.get(current - 1);

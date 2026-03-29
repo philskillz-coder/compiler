@@ -32,6 +32,16 @@ public class Closure {
         values.put(name, value);
     }
 
+    public boolean setValueParent(String name, AbstractValue value) {
+        if (exists(name)) {
+            values.put(name, value);
+            return true;
+        } else if (parent != null) {
+            return parent.setValueParent(name, value);
+        }
+        return false;
+    }
+
     public boolean exists(String name) {
         return values.containsKey(name);
     }
