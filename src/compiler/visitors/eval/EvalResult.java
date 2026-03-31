@@ -12,6 +12,7 @@ import compiler.parser.ast.FunctionDecl;
 import compiler.visitors.eval.values.literal.BoolValue;
 import compiler.visitors.eval.values.literal.FloatValue;
 import compiler.visitors.eval.values.literal.IntValue;
+import compiler.visitors.eval.values.literal.NullValue;
 import compiler.visitors.eval.values.literal.StringValue;
 
 import java.util.Map;
@@ -139,7 +140,7 @@ public class EvalResult {
     }
 
     public static EvalResult nullValue() {
-        return new EvalResult(ResultType.VALUE, null);
+        return new EvalResult(ResultType.VALUE, NullValue.getInstance());
     }
 
     public AbstractValue asBoolean() {
