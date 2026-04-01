@@ -37,7 +37,7 @@ public class Closure {
     }
 
     public void reassignHere(String name, AbstractValue value) {
-        if (existsHere(name)) {
+        if (!existsHere(name)) {
             throw new EvalException("Variable name not found (reassign): " + name);
         }
         Variable v = values.get(name);

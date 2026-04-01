@@ -524,7 +524,7 @@ public class TreeBuilder {
         }
         if (match(TokenType.FLOAT_LITERAL)) {
             Token<?> token = tokens.get(current - 1);
-            return new LiteralFloat((Float) token.getValue());
+            return new LiteralFloat(((Double) token.getValue()).floatValue());
         }
         if (match(TokenType.STRING_LITERAL)) {
             Token<?> token = tokens.get(current - 1);

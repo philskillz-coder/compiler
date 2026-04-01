@@ -205,7 +205,8 @@ public class ASTEvalVisitor implements ASTVisitor<EvalResult> {
             exitClosure();
 
             if (result.is(EvalResult.ResultType.RETURN)) {
-                return EvalResult.value(result.unwrapReturnValue());
+                AbstractValue returnVal = result.unwrapReturnValue();
+                return EvalResult.value(returnVal != null ? returnVal : NullValue.getInstance());
             }
             return result;
         }
