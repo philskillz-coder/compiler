@@ -61,6 +61,9 @@ public class TreeBuilder {
         if (match(TokenType.KW_IF)) return parseIfStatement();
         if (match(TokenType.KW_WHILE)) return parseWhileStatement();
         if (match(TokenType.KW_RETURN)) return parseReturnStatement();
+        if (match(TokenType.KW_YIELD)) return parseYieldStatement();
+        if (match(TokenType.KW_BREAK)) return parseBreakStatement();
+        if (match(TokenType.KW_CONTINUE)) return parseContinueStatement();
 
         // Falls es kein Statement ist, behandle es als Anweisung
         return parseExpressionStatement();
@@ -91,6 +94,18 @@ public class TreeBuilder {
         consume(TokenType.CURLY_CLOSE, "Expected closing bracket for block statement.");
 
         return new Block(nodes);
+    }
+
+    private YieldBlock parseYieldBlock() {
+        List<Stmt> nodes = new ArrayList<>();
+
+        while (!peekMatch(TokenType.CURLY_CLOSE) && !isAtEnd()) {
+            nodes.add(parseDeclaration());
+        }
+
+        consume(TokenType.CURLY_CLOSE, "Expected closing bracket for block statement.");
+
+        return new YieldBlock(nodes);
     }
 
     /* private ClassDecl parseClassDeclaration() {
@@ -249,6 +264,25 @@ public class TreeBuilder {
         consume(TokenType.SEMICOLON, "Erwarte ';' nach dem 'return'-Statement.");
 
         return new ReturnStmt(expr);
+    }
+
+    private YieldStmt parseYieldStatement() {
+        Expr expr = null;
+        if (!peekMatch(TokenType.SEMICOLON)) {
+            expr = parseExpression();
+        }
+
+        consume(TokenType.SEMICOLON, "Erwarte ';' nach dem 'yield'-Statement.");
+
+        return new YieldStmt(expr);
+    }
+
+    private BreakStmt parseBreakStatement() {
+        return new BreakStmt();
+    }
+
+    private ContinueStmt parseContinueStatement() {
+        return new ContinueStmt();
     }
 
     /*
@@ -542,6 +576,9 @@ public class TreeBuilder {
             Expr expr = parseExpression();
             consume(TokenType.PAREN_CLOSE, "Expected ')'.");
             return expr;
+        }
+        if (match(TokenType.CURLY_OPEN)) {
+            return parseYieldBlock();
         }
 
         throw new ParseException("Unexpected token: " + peek());

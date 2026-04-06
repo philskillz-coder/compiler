@@ -33,6 +33,10 @@ public class ASTEvalVisitor implements ASTVisitor<EvalResult> {
 
     private void define(String name, Variable var) {
         assert closures.peek() != null;
+        if (closures.peek().existsHere(name) && var.isStatic()) {
+            // cannot redefine static variables
+            return;
+        }
         closures.peek().defineHere(name, var);
     }
     private void reassign(String name, AbstractValue value) {
@@ -73,6 +77,26 @@ public class ASTEvalVisitor implements ASTVisitor<EvalResult> {
             return last;
         } finally {
             exitClosure();
+        }
+    }
+
+    @Override
+    public EvalResult visitYieldBlock(YieldBlock node) {
+//        enterClosure();
+        try {
+            EvalResult last = EvalResult.nullValue();
+            for (Stmt stmt : node.statements) {
+                last = stmt.accept(this);
+                if (last.isBreaking()) {
+                    if (last.is(EvalResult.ResultType.YIELD)) { // terminate yield so only value
+                        return last.cleanResult();
+                    }
+                    break;
+                }
+            }
+            return last;
+        } finally {
+//            exitClosure();
         }
     }
 
@@ -204,11 +228,12 @@ public class ASTEvalVisitor implements ASTVisitor<EvalResult> {
             EvalResult result = func.body.accept(this);
             exitClosure();
 
-            if (result.is(EvalResult.ResultType.RETURN)) {
+            if (result.is(EvalResult.ResultType.RETURN)) { // if "return"
                 AbstractValue returnVal = result.unwrapReturnValue();
                 return EvalResult.value(returnVal != null ? returnVal : NullValue.getInstance());
             }
-            return result;
+
+            return result; // pass "break" "continue" up the chain???
         }
         else if (callee.isClass()) {
             ClassValue classVal = callee.asClass();
@@ -353,25 +378,52 @@ public class ASTEvalVisitor implements ASTVisitor<EvalResult> {
     @Override
     public EvalResult visitIf(IfStmt node) {
         EvalResult cond = node.condition.accept(this);
-        if ((boolean) cond.asBoolean().getNativeAbstractValue()) return node.thenBranch.accept(this);
-        if (node.elseBranch != null) return node.elseBranch.accept(this);
-        return EvalResult.nullValue();
+        try {
+            enterClosure();
+            if ((boolean) cond.asBoolean().getNativeAbstractValue()) return node.thenBranch.accept(this);
+            if (node.elseBranch != null) return node.elseBranch.accept(this);
+            return EvalResult.nullValue();
+        } finally {
+            exitClosure();
+        }
     }
 
     @Override
     public EvalResult visitWhile(WhileStmt node) {
         EvalResult last = EvalResult.nullValue();
-        while ((boolean) node.condition.accept(this).asBoolean().getNativeAbstractValue()) {
-            last = node.body.accept(this);
-            if (last.isBreaking()) break;
+        try {
+            enterClosure();
+            while ((boolean) node.condition.accept(this).asBoolean().getNativeAbstractValue()) {
+                last = node.body.accept(this);
+                if (last.isBreaking()) break;
+            }
+            return last;
+
+        } finally {
+            exitClosure();
         }
-        return last;
     }
 
     @Override
     public EvalResult visitReturn(ReturnStmt node) {
         if (node.returnValue != null) return EvalResult.returnValue(node.returnValue.accept(this).unwrapValue());
         return EvalResult.returnValue(null);
+    }
+
+    @Override
+    public EvalResult visitYield(YieldStmt node) {
+        if (node.yieldValue != null) return EvalResult.yieldValue(node.yieldValue.accept(this).unwrapValue());
+        return EvalResult.yieldValue(null);
+    }
+
+    @Override
+    public EvalResult visitBreak(BreakStmt node) {
+        return EvalResult.breakStmt();
+    }
+
+    @Override
+    public EvalResult visitContinue(ContinueStmt node) {
+        return EvalResult.continueStmt();
     }
 
     @Override

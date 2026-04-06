@@ -25,8 +25,12 @@ public interface ASTVisitor<R> {
     R visitIf(IfStmt node);
     R visitWhile(WhileStmt node);
     R visitReturn(ReturnStmt node);
+    R visitYield(YieldStmt node);
+    R visitBreak(BreakStmt node);
+    R visitContinue(ContinueStmt node);
     R visitExpr(ExprStmt node);
     R visitBlock(Block node);
+    R visitYieldBlock(YieldBlock node);
 
     // Funktionen & Klassen
     R visitFunctionDecl(FunctionDecl node);

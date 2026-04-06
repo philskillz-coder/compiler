@@ -23,6 +23,7 @@ public class EvalResult {
         NORMAL,
         VALUE,
         RETURN,
+        YIELD,
         BREAK,
         CONTINUE
     }
@@ -56,6 +57,10 @@ public class EvalResult {
         return new EvalResult(ResultType.RETURN, value);
     }
 
+    public static EvalResult yieldValue(AbstractValue value) {
+        return new EvalResult(ResultType.YIELD, value);
+    }
+
     public static EvalResult breakStmt() {
         return new EvalResult(ResultType.BREAK, null);
     }
@@ -65,7 +70,7 @@ public class EvalResult {
     }
 
     public boolean isBreaking() {
-        return this.is(ResultType.RETURN, ResultType.BREAK, ResultType.CONTINUE);
+        return this.is(ResultType.RETURN, ResultType.BREAK, ResultType.CONTINUE, ResultType.YIELD);
     }
 
     public boolean is(ResultType t) {
@@ -79,6 +84,10 @@ public class EvalResult {
         return false;
     }
 
+    public EvalResult cleanResult() {
+        return new EvalResult(ResultType.VALUE, value);
+    }
+
     public AbstractValue unwrapValue() {
         if (!is(ResultType.VALUE)) throw new EvalException("Expected VALUE type but got " + type);
         return value;
@@ -86,6 +95,11 @@ public class EvalResult {
 
     public AbstractValue unwrapReturnValue() {
         if (!is(ResultType.RETURN)) throw new EvalException("Expected RETURN type but got " + type);
+        return value;
+    }
+
+    public AbstractValue unwrapYieldValue() {
+        if (!is(ResultType.YIELD)) throw new EvalException("Expected YIELD type but got " + type);
         return value;
     }
 

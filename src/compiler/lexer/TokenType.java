@@ -62,8 +62,11 @@ public enum TokenType {
     KW_IF,              // if
     KW_ELSE,            // else
     KW_WHILE,           // while
+    KW_BREAK,
+    KW_CONTINUE,
     KW_FUNC,            // func
     KW_RETURN,          // return
+    KW_YIELD,
     KW_CLASS,           // class
     KW_PUBLIC,
     KW_PRIVATE,

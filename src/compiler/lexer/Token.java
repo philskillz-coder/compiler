@@ -235,6 +235,14 @@ class TokenKwWhile extends TokenKw {
     public TokenKwWhile() { super("while", TokenType.KW_WHILE); }
 }
 
+class TokenKwBreak extends TokenKw {
+    public TokenKwBreak() { super("break", TokenType.KW_BREAK); }
+}
+
+class TokenKwContinue extends TokenKw {
+    public TokenKwContinue() { super("continue", TokenType.KW_CONTINUE); }
+}
+
 class TokenKwFnDecl extends TokenKw {
     public TokenKwFnDecl() { super("func", TokenType.KW_FUNC); }
 }
@@ -244,7 +252,11 @@ class TokenKwClassDecl extends TokenKw {
 }
 
 class TokenKwReturn extends TokenKw {
-    public TokenKwReturn() {super("return", TokenType.KW_RETURN);}
+    public TokenKwReturn() {super("return", TokenType.KW_RETURN); }
+}
+
+class TokenKwYield extends TokenKw {
+    public TokenKwYield() { super("yield", TokenType.KW_YIELD); }
 }
 
 abstract class TokenKwMod extends TokenKw {

@@ -252,8 +252,11 @@ public class Tokenizer {
             case "if": tokens.add(new TokenKwIf()); break;
             case "else": tokens.add(new TokenKwElse()); break;
             case "while": tokens.add(new TokenKwWhile()); break;
+            case "break": tokens.add(new TokenKwBreak()); break;
+            case "continue": tokens.add(new TokenKwContinue()); break;
             case "func": tokens.add(new TokenKwFnDecl()); break;
             case "return": tokens.add(new TokenKwReturn()); break;
+            case "yield": tokens.add(new TokenKwYield()); break;
             case "class": tokens.add(new TokenKwClassDecl()); break;
             case "static": tokens.add(new TokenKwStatic()); break;
             case "final": tokens.add(new TokenKwFinal()); break;

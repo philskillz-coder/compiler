@@ -1,34 +1,4 @@
-class Bank {
-    var static int gesamtGeld = 0;
-    var string inhaber;
-    var int kontostand = 0;
-
-    func Bank constructor(string name, int start) {
-        inhaber = name;
-        kontostand = start;
-        gesamtGeld = gesamtGeld + start;
-    }
-
-    func void einzahlen(int betrag) {
-        kontostand = kontostand + betrag;
-        gesamtGeld = gesamtGeld + betrag;
-    }
-
-    func void status() {
-        print(inhaber);
-        print(kontostand);
-        print(gesamtGeld);
-    }
+while ({var static int c = 0; c=c+1; yield c<=10;}) {
+    print(c);
 }
-
-var Bank kontoA = Bank("Alice", 100);
-
-var Bank kontoB = Bank("Bob", 50);
-
-kontoA.einzahlen(20);
-
-print("--- Alice Status ---");
-kontoA.status();
-
-print("--- Bob Status ---");
-kontoB.status();
+print(c);
