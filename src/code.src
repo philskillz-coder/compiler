@@ -1,4 +1,7 @@
+###
 while ({var static int c = 0; c=c+1; yield c<=10;}) {
     print(c);
 }
-print(c);
+###
+var int c = 0;
+c++;

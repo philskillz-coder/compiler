@@ -60,12 +60,20 @@ class TokenPeriod extends TokenSymbol {
     public TokenPeriod() { super(".", TokenType.PERIOD);}
 }
 
+class TokenComment extends TokenSymbol {
+    public TokenComment() { super("#", TokenType.SYM_COMMENT); }
+}
+
+class TokenMultiComment extends TokenSymbol {
+    public TokenMultiComment() { super("###", TokenType.SYM_MULTI_COMMENT); }
+}
+
 class TokenEOF extends TokenSymbol {
-    public TokenEOF() { super("EOF", TokenType.EOF); }
+    public TokenEOF() { super("EOF", TokenType.SYM_EOF); }
 }
 
 class TokenSOF extends TokenSymbol {
-    public TokenSOF() { super("SOF", TokenType.SOF); }
+    public TokenSOF() { super("SOF", TokenType.SYM_SOF); }
 }
 
 

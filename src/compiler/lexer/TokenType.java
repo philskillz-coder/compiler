@@ -76,7 +76,10 @@ public enum TokenType {
     KW_CATCH,           // catch
     KW_FINALLY,         // finally
 
+    SYM_COMMENT,        // #
+    SYM_MULTI_COMMENT,  // ###
+
     // VII. ZUSTANDS-MARKER
-    EOF,                // End Of File
-    SOF                 // Start Of File (optional)
+    SYM_EOF,                // End Of File
+    SYM_SOF                 // Start Of File (optional)
 }

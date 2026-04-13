@@ -10,6 +10,11 @@ public class Tokenizer {
     private int start = 0;
     private int current = 0;
 
+    private enum CommentType {
+        None, Line, Multi
+    }
+    private CommentType isComment = CommentType.None;
+
     public Tokenizer(String input) {
         this.input = input;
     }
@@ -31,9 +36,39 @@ public class Tokenizer {
     }
 
     private void scanToken() {
+        // block
+        if (isComment == CommentType.Multi) {
+            if (matchMany("###")) {
+                isComment = CommentType.None;
+            } else {
+                advance(); // Inhalt des Kommentars ignorieren
+            }
+            return;
+        }
+
+        // line
+        if (isComment == CommentType.Line) {
+            if (peek() == '\n' || isAtEnd()) {
+                isComment = CommentType.None;
+                // Wir konsumieren das \n hier nicht, damit der Case '\n'
+                // im normalen Switch die Zeile korrekt beenden kann.
+            } else {
+                advance();
+            }
+            return;
+        }
+
         char ch = advance(); // Konsumiert das nächste Zeichen
 
         switch (ch) {
+            case '#':
+                if (matchMany("##")) {
+                    isComment = CommentType.Multi;
+                } else {
+                    isComment = CommentType.Line;
+                }
+                break;
+
             // --- Ein-Zeichen-Trennzeichen ---
             case '(': tokens.add(new TokenParenOpen()); break;
             case ')': tokens.add(new TokenParenClose()); break;
@@ -186,6 +221,18 @@ public class Tokenizer {
         if (input.charAt(current) != expected) return false;
 
         current++; // Konsumiert das Zeichen
+        return true;
+    }
+
+    private boolean matchMany(String expected) {
+        if (current + expected.length() > input.length()) return false;
+
+        for (int i = 0; i < expected.length(); i++) {
+            if (input.charAt(current + i) != expected.charAt(i)) {
+                return false;
+            }
+        }
+        current += expected.length(); // Erst jetzt springen wir vor
         return true;
     }
 

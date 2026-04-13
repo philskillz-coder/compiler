@@ -20,7 +20,7 @@ public class TreeBuilder {
     }
 
     public Program parse() {
-        consume(TokenType.SOF);
+        consume(TokenType.SYM_SOF);
         List<Stmt> declarations = new ArrayList<>();
 
         while (!isAtEnd()) {
@@ -739,7 +739,7 @@ public class TreeBuilder {
             return true;
         }
 
-        return tokens.get(current).getType() == TokenType.EOF;
+        return tokens.get(current).getType() == TokenType.SYM_EOF;
     }
 
     private BinaryOperator mapTokenToBinaryOp(TokenType type) {
