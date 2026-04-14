@@ -144,6 +144,56 @@ public class ASTEvalVisitor implements ASTVisitor<EvalResult> {
     }
 
     @Override
+    public EvalResult visitCompoundAssign(CompoundAssignExpr node) {
+        // 1. Die rechte Seite (RHS) auswerten
+        EvalResult rhs = node.value.accept(this);
+
+        // 2. Den aktuellen Wert der linken Seite (LHS) und das Ziel bestimmen
+        EvalResult currentVal;
+        ObjectClosure targetObject = null; // Cache für FieldAccess
+        String targetName;
+
+        if (node.target instanceof VariableExpr) {
+            targetName = ((VariableExpr) node.target).name;
+            // Nutzt dein resolve-Hilfsmittel, um den aktuellen Wert zu holen
+            currentVal = EvalResult.value(resolve(targetName));
+
+        } else if (node.target instanceof FieldAccessExpr) {
+            FieldAccessExpr fieldNode = (FieldAccessExpr) node.target;
+            targetName = fieldNode.fieldName;
+
+            // WICHTIG: Das Ziel-Objekt nur EINMAL auswerten
+            EvalResult objRes = fieldNode.target.accept(this);
+            if (!objRes.isObject()) {
+                throw new EvalException("Cannot use compound assignment on non-object");
+            }
+
+            targetObject = objRes.asObject().getClosure();
+            // Aktuellen Wert des Feldes lesen
+            currentVal = EvalResult.value(targetObject.getValue(targetName));
+
+        } else {
+            throw new EvalException("Invalid compound assignment target");
+        }
+
+        // 3. Die Operation ausführen (Nutzt deine bestehende applyBinary-Logik!)
+        // Das berechnet z.B. (alterWert + rhs)
+        EvalResult newValue = currentVal.applyBinary(node.op, rhs);
+
+        // 4. Den neuen Wert zurückschreiben
+        if (node.target instanceof VariableExpr) {
+            // Nutzt dein reassign aus den Var-Utils (rekursiv durch Closures)
+            reassign(targetName, newValue.unwrapValue());
+        } else {
+            // Nutzt die setValueObject-Methode deines Objekts
+            targetObject.setValueObject(targetName, newValue.unwrapValue());
+        }
+
+        // In den meisten Sprachen gibt eine Zuweisung den neuen Wert zurück
+        return newValue;
+    }
+
+    @Override
     public EvalResult visitVariableExpr(VariableExpr node) {
         return EvalResult.value(resolve(node.name));
     }
@@ -361,6 +411,8 @@ public class ASTEvalVisitor implements ASTVisitor<EvalResult> {
     public EvalResult visitLiteralBool(LiteralBool node) { return EvalResult.fromBool(node.value); }
     @Override
     public EvalResult visitLiteralString(LiteralString node) { return EvalResult.fromString(node.value); }
+    @Override
+    public EvalResult visitLiteralNull(LiteralNull node) { return EvalResult.nullValue(); }
 
     @Override
     public EvalResult visitBinaryOp(BinaryOp node) {
@@ -371,6 +423,7 @@ public class ASTEvalVisitor implements ASTVisitor<EvalResult> {
 
     @Override
     public EvalResult visitUnaryOp(UnaryOp node) {
+        // todo: remove post/pre inc/dec and add += -= *= /= %= ... in favour
         EvalResult operand = node.value.accept(this);
         return operand.applyUnary(node.op);
     }

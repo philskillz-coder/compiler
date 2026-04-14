@@ -41,6 +41,10 @@ public abstract class AbstractValue implements NumericOperations, LogicOperation
     @Override public AbstractValue logicalOr(AbstractValue other) { throw unsupported("||", other); }
     @Override public AbstractValue logicalNot() { throw unaryUnsupported("!"); }
     @Override public AbstractValue bitwiseNot() { throw unaryUnsupported("~"); }
+    @Override public AbstractValue pre_increment() { throw unaryUnsupported("(pre)++"); }
+    @Override public AbstractValue post_increment() { throw unaryUnsupported("++(post)"); }
+    @Override public AbstractValue pre_decrement() { throw unaryUnsupported("(pre)--"); }
+    @Override public AbstractValue post_decrement() { throw unaryUnsupported("--(post)"); }
     @Override public AbstractValue negate() { throw unaryUnsupported("-"); }
     @Override public AbstractValue asBoolean() { throw unaryUnsupported("asBoolean"); }
 
@@ -77,11 +81,10 @@ public abstract class AbstractValue implements NumericOperations, LogicOperation
             case NEGATE: return negate();
             case LOGIC_NOT: return logicalNot();
             case BITWISE_NOT: return bitwiseNot();
-            case PRE_INC:
-            case POST_INC:
-            case PRE_DEC:
-            case POST_DEC:
-                throw new EvalException("Increment/Decrement not implemented yet for " + this.getClass().getSimpleName());
+            case PRE_INC: return pre_increment();
+            case POST_INC: return post_increment();
+            case PRE_DEC: return pre_decrement();
+            case POST_DEC: return post_decrement();
             default:
                 throw new EvalException("Unsupported unary operator: " + op);
         }

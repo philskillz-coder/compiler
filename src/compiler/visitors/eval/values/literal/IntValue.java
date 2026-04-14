@@ -42,6 +42,81 @@ public class IntValue extends AbstractValue {
     }
 
     @Override
+    public AbstractValue modulo(AbstractValue other) {
+        return super.modulo(other);
+    }
+
+    @Override
+    public AbstractValue power(AbstractValue other) {
+        return super.power(other);
+    }
+
+    @Override
+    public AbstractValue bitwiseAnd(AbstractValue other) {
+        return super.bitwiseAnd(other);
+    }
+
+    @Override
+    public AbstractValue bitwiseOr(AbstractValue other) {
+        return super.bitwiseOr(other);
+    }
+
+    @Override
+    public AbstractValue bitwiseXor(AbstractValue other) {
+        return super.bitwiseXor(other);
+    }
+
+    @Override
+    public AbstractValue leftShift(AbstractValue other) {
+        return super.leftShift(other);
+    }
+
+    @Override
+    public AbstractValue rightShift(AbstractValue other) {
+        return super.rightShift(other);
+    }
+
+    @Override
+    public AbstractValue logicalAnd(AbstractValue other) {
+        return super.logicalAnd(other);
+    }
+
+    @Override
+    public AbstractValue logicalOr(AbstractValue other) {
+        return super.logicalOr(other);
+    }
+
+    @Override
+    public AbstractValue logicalNot() {
+        return super.logicalNot();
+    }
+
+    @Override
+    public AbstractValue bitwiseNot() {
+        return super.bitwiseNot();
+    }
+
+    @Override
+    public AbstractValue pre_increment() {
+        return new IntValue(value+1);
+    }
+
+    @Override
+    public AbstractValue post_increment() {
+        return super.post_increment();
+    }
+
+    @Override
+    public AbstractValue pre_decrement() {
+        return new IntValue(value-1);
+    }
+
+    @Override
+    public AbstractValue post_decrement() {
+        return super.post_decrement();
+    }
+
+    @Override
     public AbstractValue negate() {
         return new IntValue(-value);
     }

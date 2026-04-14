@@ -60,14 +60,6 @@ class TokenPeriod extends TokenSymbol {
     public TokenPeriod() { super(".", TokenType.PERIOD);}
 }
 
-class TokenComment extends TokenSymbol {
-    public TokenComment() { super("#", TokenType.SYM_COMMENT); }
-}
-
-class TokenMultiComment extends TokenSymbol {
-    public TokenMultiComment() { super("###", TokenType.SYM_MULTI_COMMENT); }
-}
-
 class TokenEOF extends TokenSymbol {
     public TokenEOF() { super("EOF", TokenType.SYM_EOF); }
 }
@@ -141,6 +133,14 @@ class TokenOperatorAssign extends TokenOperator {
     public TokenOperatorAssign() { super("=", TokenType.OP_ASSIGN); }
 }
 
+class TokenOperatorAddAssign extends TokenOperator {
+    public TokenOperatorAddAssign() { super("+=", TokenType.OP_ADD_ASSIGN); }
+}
+
+class TokenOperatorSubAssign extends TokenOperator {
+    public TokenOperatorSubAssign() { super("-=", TokenType.OP_SUB_ASSIGN); }
+}
+
 class TokenOperatorEqual extends TokenOperator {
     public TokenOperatorEqual() { super("==", TokenType.OP_EQUALS); }
 }
@@ -212,14 +212,6 @@ class TokenOperatorRightShift extends TokenOperator {
     public TokenOperatorRightShift() { super(">>", TokenType.OP_RIGHT_SHIFT); }
 }
 
-// Unäre Inkrement/Dekrement
-class TokenOperatorIncrement extends TokenOperator {
-    public TokenOperatorIncrement() { super("++", TokenType.OP_INCREMENT); }
-}
-
-class TokenOperatorDecrement extends TokenOperator {
-    public TokenOperatorDecrement() { super("--", TokenType.OP_DECREMENT); }
-}
 
 // --- 4. Schlüsselwörter ---
 

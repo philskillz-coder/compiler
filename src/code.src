@@ -1,7 +1,72 @@
-###
-while ({var static int c = 0; c=c+1; yield c<=10;}) {
+###while ({var static int c = 0; c=c+1; yield c<=10;}) {
     print(c);
-}
-###
+}###
+###var int a = 2;
+var int b = 1;
 var int c = 0;
-c++;
+
+a += b += c = 3;
+
+print(a);
+print(b);
+print(c);###
+###
+Repräsentiert einen einzelnen Knoten in der Liste.
+Hält den Wert und den Verweis auf den Nachfolger.
+###
+class Node {
+    var int value;
+    var Node next;
+
+    func Node constructor(int val) {
+        value = val; # Standardmäßig ist next leer/null
+    }
+}
+
+class LinkedList {
+    var Node head; # Start der Liste
+
+    func LinkedList constructor() {
+        # Initialisierung einer leeren Liste
+    }
+
+    # Fügt eine neue Zahl am Ende der Liste hinzu
+    func void add(int val) {
+        var Node newNode = Node(val);
+
+        if (head == null) {
+            print("JA");
+            head = newNode;
+        } else {
+            var Node current = head;
+            # Wir traversieren die Liste bis zum letzten Element
+            while (current.next != null) {
+                current = current.next;
+            }
+            current.next = newNode;
+        }
+    }
+
+    # Gibt alle Zahlen der Liste nacheinander aus
+    func void printAll() {
+        var Node current = head;
+        print("--- Start der Liste ---");
+
+        while (current != null) {
+            print(current.value);
+            current = current.next;
+        }
+
+        print("--- Ende der Liste ---");
+    }
+}
+
+# --- Beispielnutzung ---
+
+var LinkedList liste = LinkedList();
+
+liste.add(10);
+liste.add(20);
+liste.add(30);
+
+liste.printAll();

@@ -1,6 +1,10 @@
 package compiler.visitors.eval.values.complex;
 
+import compiler.parser.ast.BinaryOperator;
+import compiler.visitors.eval.values.AbstractValue;
 import compiler.visitors.eval.values.ComplexValue;
+import compiler.visitors.eval.values.literal.BoolValue;
+import compiler.visitors.eval.values.literal.NullValue;
 import compiler.visitors.eval.values.memory.ObjectClosure;
 
 public class ObjectValue extends ComplexValue {
@@ -21,6 +25,11 @@ public class ObjectValue extends ComplexValue {
 
     public ObjectClosure getClosure() {
         return closure;
+    }
+
+    @Override
+    public AbstractValue compare(BinaryOperator op, AbstractValue other) {
+        return new BoolValue(this == other);
     }
 
     @Override

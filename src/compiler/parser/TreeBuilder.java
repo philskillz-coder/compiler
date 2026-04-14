@@ -287,7 +287,7 @@ public class TreeBuilder {
 
     /*
     Präzedenz:
-    1. Zuweisung: = (Rechts-assoziativ)
+    1. Zuweisung: =, +=, -= (Rechts-assoziativ)
     2. Logisches ODER: ||
     3. Logisches UND: &&
     4. Bitweises ODER: |
@@ -342,13 +342,20 @@ public class TreeBuilder {
     private Expr parseAssignment() {
         Expr lhs = parseLogicalOr();
 
-        if (match(TokenType.OP_ASSIGN)) {
+        TokenType type = peek().getType();
+        if (type == TokenType.OP_ASSIGN) {
+            consume(TokenType.OP_ASSIGN);
+            return new AssignExpr(lhs, parseAssignment());
+        }
+
+        // Check für Compound Assignments
+        BinaryOperator op = mapCompoundToBinaryOp(type);
+        if (op != null) {
+            consume(type);
             if (!(lhs instanceof VariableExpr || lhs instanceof FieldAccessExpr)) {
                 throw new ParseException("Invalid assignment target.");
             }
-
-            Expr rhs = parseAssignment();
-            return new AssignExpr(lhs, rhs);
+            return new CompoundAssignExpr(op, lhs, parseAssignment());
         }
 
         return lhs;
@@ -447,9 +454,9 @@ public class TreeBuilder {
     private Expr parseUnary() {
         if (match(TokenType.OP_SUBTRACT,
                 TokenType.OP_LOGICAL_NOT,
-                TokenType.OP_BITWISE_NOT,
+                TokenType.OP_BITWISE_NOT/*,
                 TokenType.OP_INCREMENT,
-                TokenType.OP_DECREMENT)) {
+                TokenType.OP_DECREMENT*/)) {
 
             // Das gefundene Token ist der Operator.
             Token<?> operatorToken = tokens.get(current - 1);
@@ -499,13 +506,13 @@ public class TreeBuilder {
                 // Property-Zugriff: value.name
                 Token<?> name = consume(TokenType.IDENTIFIER, "Erwarte Identifier nach '.'");
                 value = new FieldAccessExpr(value, (String) name.getValue());
-            } else if (match(TokenType.OP_INCREMENT, TokenType.OP_DECREMENT)) {
+            }/* else if (match(TokenType.OP_INCREMENT, TokenType.OP_DECREMENT)) {
                 // Postfix-Inkrement/Dekrement: value++
                 UnaryOperator op = mapTokenToUnaryOp(tokens.get(current - 1).getType());
                 value = new UnaryOp(op, value);
                 // Nach einem Postfix-Operator kann normalerweise nichts mehr kommen (a++.)
                 break;
-            } else {
+            } */ else {
                 break;
             }
         }
@@ -567,6 +574,10 @@ public class TreeBuilder {
         if (match(TokenType.BOOL_LITERAL)) {
             Token<?> token = tokens.get(current - 1);
             return new LiteralBool((Boolean) token.getValue());
+        }
+        if (match(TokenType.NULL_LITERAL)) {
+            Token<?> token = tokens.get(current - 1);
+            return new LiteralNull();
         }
         if (match(TokenType.IDENTIFIER)) {
             Token<?> token = tokens.get(current - 1);
@@ -810,14 +821,22 @@ public class TreeBuilder {
                 return UnaryOperator.BITWISE_NOT;
 
             // Präfix Inkrement/Dekrement
-            case OP_INCREMENT:
+            /*case OP_INCREMENT:
                 return UnaryOperator.PRE_INC;
             case OP_DECREMENT:
                 return UnaryOperator.PRE_DEC;
-
+            */
             // Standardfall: Werfen einer Ausnahme für nicht unterstützte Typen
             default:
                 throw new IllegalArgumentException("Der TokenType " + type + " kann nicht auf einen UnaryOperator abgebildet werden.");
+        }
+    }
+
+    private BinaryOperator mapCompoundToBinaryOp(TokenType type) {
+        switch (type) {
+            case OP_ADD_ASSIGN: return BinaryOperator.ADD;
+            case OP_SUB_ASSIGN: return BinaryOperator.SUB;
+            default: return null;
         }
     }
 

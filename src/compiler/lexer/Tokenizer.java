@@ -83,19 +83,19 @@ public class Tokenizer {
 
             // --- Multi-Zeichen-Operatoren mit Lookahead ---
 
-            // + (Addition vs. Inkrement)
+            // + (Addition vs. AddAssign)
             case '+':
-                if (match('+')) {
-                    tokens.add(new TokenOperatorIncrement()); // ++
+                if (match('=')) {
+                    tokens.add(new TokenOperatorAddAssign()); // +=
                 } else {
                     tokens.add(new TokenOperatorAdd());      // +
                 }
                 break;
 
-            // - (Subtraktion vs. Dekrement)
+            // - (Subtraktion vs. SubAssign)
             case '-':
-                if (match('-')) {
-                    tokens.add(new TokenOperatorDecrement()); // --
+                if (match('=')) {
+                    tokens.add(new TokenOperatorSubAssign()); // -=
                 } else {
                     tokens.add(new TokenOperatorSub());       // - (auch unäre Negation)
                 }

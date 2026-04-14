@@ -15,11 +15,13 @@ public interface ASTVisitor<R> {
     R visitLiteralFloat(LiteralFloat node);
     R visitLiteralString(LiteralString node);
     R visitLiteralBool(LiteralBool node);
+    R visitLiteralNull(LiteralNull node);
 
     // Operatoren
     R visitBinaryOp(BinaryOp node);
     R visitUnaryOp(UnaryOp node);
     R visitAssign(AssignExpr node);
+    R visitCompoundAssign(CompoundAssignExpr node);
 
     // Statements
     R visitIf(IfStmt node);

@@ -44,9 +44,12 @@ public enum TokenType {
     OP_LEFT_SHIFT,      // <<
     OP_RIGHT_SHIFT,     // >>
 
-    // IV. INKREMENT/DEKREMENT (Unär)
-    OP_INCREMENT,       // ++
-    OP_DECREMENT,       // --
+    // IV. COMPOUND ASSIGNMENT
+    OP_ADD_ASSIGN,      // +=
+    OP_SUB_ASSIGN,      // -=
+    OP_MUL_ASSIGN,      // *=
+    OP_DIV_ASSIGN,      // /=
+    OP_MOD_ASSIGN,      // %=
 
     // V. TRENNZEICHEN
     PAREN_OPEN,         // (
