@@ -250,40 +250,13 @@ public class ASTEvalVisitor implements ASTVisitor<EvalResult> {
         // 1. Zuerst die Funktion suchen, SOLANGE wir noch im alten Scope sind!
         EvalResult callee = node.callee.accept(this);
 
+        List<AbstractValue> evaluatedArgs = new ArrayList<>();
+        for (Expr arg : node.arguments) {
+            evaluatedArgs.add(arg.accept(this).unwrapValue());
+        }
+
         if (callee.isFunction()) {
-            FunctionDecl func = callee.asFunction().getDecl();
-            Closure definitionClosure = callee.asFunction().getClosure();
-
-            if (func.parameters.size() != node.arguments.size()) {
-                throw new EvalException("Argument count mismatch for function " + func.name); // todo: kw arguments
-            }
-
-            // 2. Argumente auswerten, SOLANGE wir noch im alten Scope sind!
-            // (Sonst könnten Argumente keine Variablen von "außen" lesen)
-            List<AbstractValue> evaluatedArgs = new ArrayList<>();
-            for (Expr arg : node.arguments) {
-                evaluatedArgs.add(arg.accept(this).unwrapValue());
-            }
-
-            // 3. Jetzt erst in den neuen Scope wechseln
-            Closure callClosure = new Closure(definitionClosure);
-            enterClosure(callClosure);
-
-            // 4. Parameter in der neuen Closure zuweisen
-            for (int i = 0; i < func.parameters.size(); i++) {
-                define(func.parameters.get(i).name, new Variable(evaluatedArgs.get(i)));
-            }
-
-            // 5. Body ausführen
-            EvalResult result = func.body.accept(this);
-            exitClosure();
-
-            if (result.is(EvalResult.ResultType.RETURN)) { // if "return"
-                AbstractValue returnVal = result.unwrapReturnValue();
-                return EvalResult.value(returnVal != null ? returnVal : NullValue.getInstance());
-            }
-
-            return result; // pass "break" "continue" up the chain???
+            return invokeFunction(callee.asFunction(), evaluatedArgs);
         }
         else if (callee.isClass()) {
             ClassValue classVal = callee.asClass();
@@ -311,12 +284,6 @@ public class ASTEvalVisitor implements ASTVisitor<EvalResult> {
                 }
             }
 
-            // 4. Argumente für den Konstruktor auswerten
-            List<AbstractValue> args = new ArrayList<>();
-            for (Expr arg : node.arguments) {
-                args.add(arg.accept(this).unwrapValue());
-            }
-
             // 5. Den Konstruktor suchen (nur innerhalb der Klassenhierarchie!)
             // Wir nutzen getValue, um nicht versehentlich globale Funktionen zu finden
             ClassClosure cc = classVal.getClosure();
@@ -328,7 +295,7 @@ public class ASTEvalVisitor implements ASTVisitor<EvalResult> {
                     FunctionDecl funcDecl = constructorFunc.getDecl();
 
                     // Check: Passen die Argumente?
-                    if (funcDecl.parameters.size() != args.size()) {
+                    if (funcDecl.parameters.size() != evaluatedArgs.size()) {
                         throw new EvalException("Constructor of " + decl.name +
                                 " expects " + funcDecl.parameters.size() + " arguments.");
                     }
@@ -339,7 +306,7 @@ public class ASTEvalVisitor implements ASTVisitor<EvalResult> {
 
                     // Parameter binden
                     for (int i = 0; i < funcDecl.parameters.size(); i++) {
-                        callScope.defineHere(funcDecl.parameters.get(i).name, new Variable(args.get(i)));
+                        callScope.defineHere(funcDecl.parameters.get(i).name, new Variable(evaluatedArgs.get(i)));
                     }
 
                     // 7. Ausführen
@@ -416,9 +383,36 @@ public class ASTEvalVisitor implements ASTVisitor<EvalResult> {
 
     @Override
     public EvalResult visitBinaryOp(BinaryOp node) {
-        EvalResult left = node.lhs.accept(this);
+        /* EvalResult left = node.lhs.accept(this);
         EvalResult right = node.rhs.accept(this);
-        return left.applyBinary(node.op, right);
+        return left.applyBinary(node.op, right); */
+
+        EvalResult leftRes = node.lhs.accept(this);
+        if (leftRes.isBreaking()) return leftRes;
+
+        EvalResult rightRes = node.rhs.accept(this);
+        if (rightRes.isBreaking()) return rightRes;
+
+        AbstractValue lhs = leftRes.unwrapValue();
+        AbstractValue rhs = rightRes.unwrapValue();
+
+        // Dynamic Dispatch für Objekte
+        if (lhs instanceof ObjectValue) {
+            String methodName = getMagicMethodName(node.op); // Deine Util-Funktion
+            if (methodName != null) {
+                ObjectValue obj = (ObjectValue) lhs;
+                // Wir suchen die Methode in der Klassenhierarchie
+                AbstractValue member = obj.getClosure().getValueObject(methodName);
+
+                if (member instanceof FunctionValue) {
+                    // Wenn gefunden: Dynamischer Aufruf (Overloading gewinnt!)
+                    return invokeFunction((FunctionValue) member, Collections.singletonList(rhs));
+                }
+            }
+        }
+
+        // --- Fallback für Literale (Int + Int, etc.) ---
+        return leftRes.applyBinary(node.op, rightRes);
     }
 
     @Override
@@ -482,5 +476,65 @@ public class ASTEvalVisitor implements ASTVisitor<EvalResult> {
     @Override
     public EvalResult visitExpr(ExprStmt node) {
         return node.expr.accept(this);
+    }
+
+    private EvalResult invokeFunction(FunctionValue callee, List<AbstractValue> args) {
+        // get def and closure
+        FunctionDecl func = callee.getDecl();
+        Closure definitionClosure = callee.getClosure();
+
+        // 2. Validierung: Passen die Argumente zur Parameterliste?
+        if (func.parameters.size() != args.size()) {
+            throw new EvalException("Function " + func.name + " expects " +
+                    func.parameters.size() + " arguments, but got " + args.size());
+        }
+
+        Closure callClosure = new Closure(definitionClosure);
+
+        for (int i = 0; i < func.parameters.size(); i++) {
+            String paramName = func.parameters.get(i).name;
+            AbstractValue argValue = args.get(i);
+
+            // Wir definieren die Variable direkt im neuen Call-Scope
+            callClosure.defineHere(paramName, new Variable(argValue));
+        }
+
+        enterClosure(callClosure);
+        try {
+            EvalResult result = func.body.accept(this);
+
+            // 6. Signal-Handling: Wenn die Funktion "return" aufgerufen hat,
+            // müssen wir den Wert auspacken und als normales Value-Result zurückgeben.
+            if (result.is(EvalResult.ResultType.RETURN)) {
+                AbstractValue returnVal = result.unwrapReturnValue();
+                return EvalResult.value(returnVal != null ? returnVal : NullValue.getInstance());
+            }
+
+            // Falls die Funktion einfach zu Ende gelaufen ist, ohne return (void-style)
+            // Geben wir entweder das letzte Ergebnis oder Null zurück.
+            return result; // pass breaking up the chain
+            //return result.isBreaking() ? result : EvalResult.nullValue();
+
+        } finally {
+            // WICHTIG: Scope immer verlassen, egal ob Fehler oder Erfolg
+            exitClosure();
+        }
+    }
+
+    private String getMagicMethodName(BinaryOperator operator) {
+        switch (operator) {
+            case ADD:    return "__add__";
+            case SUB:    return "__sub__";
+            case MUL:    return "__mul__";
+            case DIV:    return "__div__";
+            case MOD:    return "__mod__";
+            case EQUAL:  return "__eq__";
+            case NOT_EQUAL: return "__ne__";
+            case LESS:   return "__lt__";
+            case GREATER: return "__gt__";
+            case LESS_EQUAL: return "__le__";
+            case GREATER_EQUAL: return "__ge__";
+            default:     return null;
+        }
     }
 }

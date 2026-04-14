@@ -1,6 +1,7 @@
 package compiler.visitors.eval.values.complex;
 
 import compiler.parser.ast.BinaryOperator;
+import compiler.visitors.eval.exceptions.EvalException;
 import compiler.visitors.eval.values.AbstractValue;
 import compiler.visitors.eval.values.ComplexValue;
 import compiler.visitors.eval.values.literal.BoolValue;
@@ -29,7 +30,15 @@ public class ObjectValue extends ComplexValue {
 
     @Override
     public AbstractValue compare(BinaryOperator op, AbstractValue other) {
-        return new BoolValue(this == other);
+        if (op == BinaryOperator.EQUAL) {
+            // Default: Identity equality (are they the same object in Java memory?)
+            return new BoolValue(this == other);
+        }
+        if (op == BinaryOperator.NOT_EQUAL) {
+            return new BoolValue(this != other);
+        }
+
+        throw new EvalException("Operator " + op + " not supported for objects without overloading.");
     }
 
     @Override

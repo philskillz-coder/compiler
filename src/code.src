@@ -14,59 +14,26 @@ print(c);###
 Repräsentiert einen einzelnen Knoten in der Liste.
 Hält den Wert und den Verweis auf den Nachfolger.
 ###
-class Node {
-    var int value;
-    var Node next;
 
-    func Node constructor(int val) {
-        value = val; # Standardmäßig ist next leer/null
+class Vector {
+    var int x;
+    var int y;
+
+    func Vector constructor(int px, int py) {
+        x = px;
+        y = py;
+    }
+
+    func Vector __add__(Vector other) {
+        return Vector(x + other.x, y + other.y);
     }
 }
 
-class LinkedList {
-    var Node head; # Start der Liste
+# Verwendung:
+var Vector v1 = Vector(10, 5);
+var Vector v2 = Vector(2, 3);
+// obj.this not working
+var Vector v3 = v1 + v2;
 
-    func LinkedList constructor() {
-        # Initialisierung einer leeren Liste
-    }
-
-    # Fügt eine neue Zahl am Ende der Liste hinzu
-    func void add(int val) {
-        var Node newNode = Node(val);
-
-        if (head == null) {
-            print("JA");
-            head = newNode;
-        } else {
-            var Node current = head;
-            # Wir traversieren die Liste bis zum letzten Element
-            while (current.next != null) {
-                current = current.next;
-            }
-            current.next = newNode;
-        }
-    }
-
-    # Gibt alle Zahlen der Liste nacheinander aus
-    func void printAll() {
-        var Node current = head;
-        print("--- Start der Liste ---");
-
-        while (current != null) {
-            print(current.value);
-            current = current.next;
-        }
-
-        print("--- Ende der Liste ---");
-    }
-}
-
-# --- Beispielnutzung ---
-
-var LinkedList liste = LinkedList();
-
-liste.add(10);
-liste.add(20);
-liste.add(30);
-
-liste.printAll();
+print(v3.x); # Ausgabe: 12
+print(v3.y); # Ausgabe: 8
