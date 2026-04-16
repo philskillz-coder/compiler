@@ -9,10 +9,7 @@ import compiler.visitors.eval.values.complex.FunctionValue;
 import compiler.visitors.eval.values.complex.ObjectValue;
 import compiler.visitors.eval.values.literal.*;
 import compiler.visitors.eval.exceptions.EvalException;
-import compiler.visitors.eval.values.memory.ClassClosure;
-import compiler.visitors.eval.values.memory.Closure;
-import compiler.visitors.eval.values.memory.ObjectClosure;
-import compiler.visitors.eval.values.memory.Variable;
+import compiler.visitors.eval.values.memory.*;
 
 import java.util.*;
 
@@ -302,7 +299,7 @@ public class ASTEvalVisitor implements ASTVisitor<EvalResult> {
 
                     // 6. Konstruktor-Scope bauen
                     // WICHTIG: Parent ist die ObjectClosure, damit 'this' gefunden wird!
-                    Closure callScope = new Closure(instanceScope);
+                    FunctionClosure callScope = new FunctionClosure(instanceScope);
 
                     // Parameter binden
                     for (int i = 0; i < funcDecl.parameters.size(); i++) {
@@ -402,16 +399,20 @@ public class ASTEvalVisitor implements ASTVisitor<EvalResult> {
             if (methodName != null) {
                 ObjectValue obj = (ObjectValue) lhs;
                 // Wir suchen die Methode in der Klassenhierarchie
-                AbstractValue member = obj.getClosure().getValueObject(methodName);
+                ObjectClosure instanceClosure = obj.getClosure();
+                AbstractValue member = instanceClosure.getValueObject(methodName);
 
                 if (member instanceof FunctionValue) {
+                    FunctionValue staticMethod = (FunctionValue) member;
+
                     // Wenn gefunden: Dynamischer Aufruf (Overloading gewinnt!)
-                    return invokeFunction((FunctionValue) member, Collections.singletonList(rhs));
+                    FunctionValue boundMethod = new FunctionValue(staticMethod.getDecl(), instanceClosure);
+                    return invokeFunction(boundMethod, Collections.singletonList(rhs));
                 }
             }
         }
 
-        // --- Fallback für Literale (Int + Int, etc.) ---
+        // Literals
         return leftRes.applyBinary(node.op, rightRes);
     }
 
@@ -489,7 +490,7 @@ public class ASTEvalVisitor implements ASTVisitor<EvalResult> {
                     func.parameters.size() + " arguments, but got " + args.size());
         }
 
-        Closure callClosure = new Closure(definitionClosure);
+        FunctionClosure callClosure = new FunctionClosure(definitionClosure);
 
         for (int i = 0; i < func.parameters.size(); i++) {
             String paramName = func.parameters.get(i).name;

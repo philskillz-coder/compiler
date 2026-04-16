@@ -44,6 +44,7 @@ public class TreeBuilder {
         // Wenn es keine Deklaration ist, muss es eine Anweisung sein,
         return parseStatement();
     }*/
+
     private Stmt parseDeclaration() {
         if (peekMatch(TokenType.KW_CLASS)) { // Nur gucken!
             return parseClassDeclaration();

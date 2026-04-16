@@ -1,7 +1,7 @@
 ###while ({var static int c = 0; c=c+1; yield c<=10;}) {
     print(c);
-}###
-###var int a = 2;
+}
+var int a = 2;
 var int b = 1;
 var int c = 0;
 
@@ -10,30 +10,43 @@ a += b += c = 3;
 print(a);
 print(b);
 print(c);###
-###
-Repräsentiert einen einzelnen Knoten in der Liste.
-Hält den Wert und den Verweis auf den Nachfolger.
-###
 
-class Vector {
-    var int x;
-    var int y;
 
-    func Vector constructor(int px, int py) {
-        x = px;
-        y = py;
-    }
+class Node {
+    var void data;
+    var void next; # Referenz auf das nächste Node-Objekt oder null
 
-    func Vector __add__(Vector other) {
-        return Vector(x + other.x, y + other.y);
+    func void constructor(void data) {
+        this.data = data;
+        this.next = null;
     }
 }
 
-# Verwendung:
-var Vector v1 = Vector(10, 5);
-var Vector v2 = Vector(2, 3);
-// obj.this not working
-var Vector v3 = v1 + v2;
+class LinkedList {
+    var void head;
 
-print(v3.x); # Ausgabe: 12
-print(v3.y); # Ausgabe: 8
+    func LinkedList constructor() {
+        this.head = null;
+    }
+
+    func void prepend(void data) {
+        var Node newNode = Node(data);
+        newNode.next = this.head;
+        this.head = newNode;
+    }
+
+    func void printList() {
+        var void current = this.head;
+        while (current != null) {
+            print(current.data);
+            current = current.next;
+        }
+    }
+}
+
+var LinkedList list = LinkedList();
+list.prepend(30);
+list.prepend(20);
+list.prepend(10);
+
+list.printList();
