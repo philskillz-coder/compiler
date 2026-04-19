@@ -1,142 +1,161 @@
 package compiler.visitors.eval.values.literal;
 
-import compiler.parser.ast.BinaryOperator;
-import compiler.visitors.eval.exceptions.EvalException;
 import compiler.visitors.eval.values.AbstractValue;
+import compiler.visitors.eval.values.NumericValue;
+import compiler.visitors.eval.exceptions.EvalException;
 
-public class IntValue extends AbstractValue {
+public class IntValue extends NumericValue {
+
     private final int value;
 
-    public IntValue(int value) { this.value = value; }
-    public int getValue() { return value; }
+    public IntValue(int value) {
+        this.value = value;
+    }
+
+    public int getValue() {
+        return value;
+    }
+
+    // --- Core Logic ---
 
     @Override
-    public Object getNativeAbstractValue() { return value; }
+    public int asInt() {
+        return value;
+    }
+
+    @Override
+    public double asDouble() {
+        return (double) value;
+    }
+
+    @Override
+    protected AbstractValue getPreparedRHS(NumericValue rhs) {
+        // Zwingt die rechte Seite zum Int (Left-Dominance)
+        return new IntValue(rhs.asInt());
+    }
+
+    @Override
+    public Object getNativeAbstractValue() {
+        return value;
+    }
+
+    // --- Arithmetische Operationen ---
 
     @Override
     public AbstractValue add(AbstractValue other) {
-        if (other instanceof IntValue) return new IntValue(this.value + ((IntValue) other).value);
-        if (other instanceof FloatValue) return new FloatValue(this.value + ((FloatValue) other).getValue());
-        throw new EvalException("Cannot add " + this.getClass() + " and " + other.getClass());
+        return new IntValue(this.value + ((IntValue) other).value);
     }
 
     @Override
     public AbstractValue subtract(AbstractValue other) {
-        if (other instanceof IntValue) return new IntValue(this.value - ((IntValue) other).value);
-        if (other instanceof FloatValue) return new FloatValue(this.value - ((FloatValue) other).getValue());
-        throw new EvalException("Cannot subtract " + this.getClass() + " and " + other.getClass());
+        return new IntValue(this.value - ((IntValue) other).value);
     }
 
     @Override
     public AbstractValue multiply(AbstractValue other) {
-        if (other instanceof IntValue) return new IntValue(this.value * ((IntValue) other).value);
-        if (other instanceof FloatValue) return new FloatValue(this.value * ((FloatValue) other).getValue());
-        throw new EvalException("Cannot multiply " + this.getClass() + " and " + other.getClass());
+        return new IntValue(this.value * ((IntValue) other).value);
     }
 
     @Override
     public AbstractValue divide(AbstractValue other) {
-        if (other instanceof IntValue) return new IntValue(this.value / ((IntValue) other).value);
-        if (other instanceof FloatValue) return new FloatValue(this.value / ((FloatValue) other).getValue());
-        throw new EvalException("Cannot divide " + this.getClass() + " and " + other.getClass());
+        int rhs = ((IntValue) other).value;
+        if (rhs == 0) throw new EvalException("Division by zero");
+        return new IntValue(this.value / rhs);
     }
 
     @Override
     public AbstractValue modulo(AbstractValue other) {
-        return super.modulo(other);
+        int rhs = ((IntValue) other).value;
+        if (rhs == 0) throw new EvalException("Modulo by zero");
+        return new IntValue(this.value % rhs);
     }
 
     @Override
     public AbstractValue power(AbstractValue other) {
-        return super.power(other);
+        int rhs = ((IntValue) other).value;
+        return new IntValue((int) Math.pow(this.value, rhs));
     }
+
+    // --- Bitweise Operationen ---
 
     @Override
     public AbstractValue bitwiseAnd(AbstractValue other) {
-        return super.bitwiseAnd(other);
+        return new IntValue(this.value & ((IntValue) other).value);
     }
 
     @Override
     public AbstractValue bitwiseOr(AbstractValue other) {
-        return super.bitwiseOr(other);
+        return new IntValue(this.value | ((IntValue) other).value);
     }
 
     @Override
     public AbstractValue bitwiseXor(AbstractValue other) {
-        return super.bitwiseXor(other);
-    }
-
-    @Override
-    public AbstractValue leftShift(AbstractValue other) {
-        return super.leftShift(other);
-    }
-
-    @Override
-    public AbstractValue rightShift(AbstractValue other) {
-        return super.rightShift(other);
-    }
-
-    @Override
-    public AbstractValue logicalAnd(AbstractValue other) {
-        return super.logicalAnd(other);
-    }
-
-    @Override
-    public AbstractValue logicalOr(AbstractValue other) {
-        return super.logicalOr(other);
-    }
-
-    @Override
-    public AbstractValue logicalNot() {
-        return super.logicalNot();
+        return new IntValue(this.value ^ ((IntValue) other).value);
     }
 
     @Override
     public AbstractValue bitwiseNot() {
-        return super.bitwiseNot();
+        return new IntValue(~this.value);
     }
 
     @Override
-    public AbstractValue pre_increment() {
-        return new IntValue(value+1);
+    public AbstractValue leftShift(AbstractValue other) {
+        return new IntValue(this.value << ((IntValue) other).value);
     }
 
     @Override
-    public AbstractValue post_increment() {
-        return super.post_increment();
+    public AbstractValue rightShift(AbstractValue other) {
+        return new IntValue(this.value >> ((IntValue) other).value);
+    }
+
+    // --- Vergleiche ---
+
+    @Override
+    public AbstractValue smallerThan(AbstractValue other) {
+        return new BoolValue(this.value < ((IntValue) other).value);
     }
 
     @Override
-    public AbstractValue pre_decrement() {
-        return new IntValue(value-1);
+    public AbstractValue smallerThanOrEqual(AbstractValue other) {
+        return new BoolValue(this.value <= ((IntValue) other).value);
     }
 
     @Override
-    public AbstractValue post_decrement() {
-        return super.post_decrement();
+    public AbstractValue greaterThan(AbstractValue other) {
+        return new BoolValue(this.value > ((IntValue) other).value);
     }
+
+    @Override
+    public AbstractValue greaterThanOrEqual(AbstractValue other) {
+        return new BoolValue(this.value >= ((IntValue) other).value);
+    }
+
+    @Override
+    public AbstractValue equalTo(AbstractValue other) {
+        return new BoolValue(this.value == ((IntValue) other).value);
+    }
+
+    @Override
+    public AbstractValue notEqualTo(AbstractValue other) {
+        return new BoolValue(this.value != ((IntValue) other).value);
+    }
+
+    // --- Unäre Operationen ---
 
     @Override
     public AbstractValue negate() {
-        return new IntValue(-value);
+        return new IntValue(-this.value);
     }
 
-    @Override
-    public AbstractValue compare(BinaryOperator op, AbstractValue other) {
-        int rhs = ((IntValue) other).value;
-        switch (op) {
-            case EQUAL: return new BoolValue(this.value == rhs);
-            case NOT_EQUAL: return new BoolValue(this.value != rhs);
-            case LESS: return new BoolValue(this.value < rhs);
-            case LESS_EQUAL: return new BoolValue(this.value <= rhs);
-            case GREATER: return new BoolValue(this.value > rhs);
-            case GREATER_EQUAL: return new BoolValue(this.value >= rhs);
-            default: throw new EvalException("Invalid comparison operator " + op);
-        }
-    }
+    // --- Konvertierung ---
 
     @Override
     public AbstractValue asBoolean() {
         return new BoolValue(this.value != 0);
+    }
+
+    @Override
+    public String toString() {
+        return String.valueOf(value);
     }
 }

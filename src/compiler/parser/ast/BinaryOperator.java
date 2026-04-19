@@ -29,14 +29,22 @@ public enum BinaryOperator {
 
     POWER; // für **
 
-    public boolean isArithmeticOrBitwise() {
+    public boolean isArithmetic() {
         if (this == ADD || this == SUB || this == MUL || this == DIV || this == MOD) {
             return true;
         }
-        if (this == BITWISE_AND || this == BITWISE_OR || this == BITWISE_XOR || this == LEFT_SHIFT || this == RIGHT_SHIFT || this == POWER) {
+        return false;
+    }
+
+    public boolean isBitwise() {
+        if (this == BITWISE_AND || this == BITWISE_OR || this == BITWISE_XOR || this == LEFT_SHIFT || this == RIGHT_SHIFT) {
             return true;
         }
         return false;
+    }
+
+    public boolean isArithmeticOrBitwise() {
+        return isArithmetic() || isBitwise();
     }
 
     public boolean isLogical() {

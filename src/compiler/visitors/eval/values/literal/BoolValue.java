@@ -25,16 +25,6 @@ public class BoolValue extends AbstractValue {
     }
 
     @Override
-    public AbstractValue compare(BinaryOperator op, AbstractValue other) {
-        boolean rhs = ((BoolValue) other).value;
-        switch (op) {
-            case EQUAL: return new BoolValue(this.value == rhs);
-            case NOT_EQUAL: return new BoolValue(this.value != rhs);
-            default: throw new EvalException("Invalid comparison operator for boolean: " + op);
-        }
-    }
-
-    @Override
     public AbstractValue asBoolean() {
         return this;
     }

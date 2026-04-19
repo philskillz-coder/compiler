@@ -29,19 +29,6 @@ public class ObjectValue extends ComplexValue {
     }
 
     @Override
-    public AbstractValue compare(BinaryOperator op, AbstractValue other) {
-        if (op == BinaryOperator.EQUAL) {
-            // Default: Identity equality (are they the same object in Java memory?)
-            return new BoolValue(this == other);
-        }
-        if (op == BinaryOperator.NOT_EQUAL) {
-            return new BoolValue(this != other);
-        }
-
-        throw new EvalException("Operator " + op + " not supported for objects without overloading.");
-    }
-
-    @Override
     public Object getNativeAbstractValue() { return this; }
 
     @Override

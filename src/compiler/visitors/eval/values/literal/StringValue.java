@@ -22,16 +22,6 @@ public class StringValue extends AbstractValue {
     }
 
     @Override
-    public AbstractValue compare(BinaryOperator op, AbstractValue other) {
-        String rhs = other.getNativeAbstractValue().toString();
-        switch (op) {
-            case EQUAL: return new BoolValue(this.value.equals(rhs));
-            case NOT_EQUAL: return new BoolValue(!this.value.equals(rhs));
-            default: throw new EvalException("Invalid comparison operator for string: " + op);
-        }
-    }
-
-    @Override
     public AbstractValue asBoolean() {
         return new BoolValue(!this.value.isEmpty());
     }

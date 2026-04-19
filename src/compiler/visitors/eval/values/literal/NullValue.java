@@ -20,21 +20,6 @@ public class NullValue extends LiteralValue {
         return null;
     }
 
-    @Override
-    public AbstractValue compare(BinaryOperator op, AbstractValue other) {
-        boolean isOtherNull = (other instanceof NullValue);
-
-        switch (op) {
-            case EQUAL:
-                return new BoolValue(isOtherNull);
-
-            case NOT_EQUAL:
-                return new BoolValue(!isOtherNull);
-
-            default:
-                throw new EvalException("Unsupported comparison operator '" + op + "' for Null.");
-        }
-    }
 
     @Override
     public AbstractValue asBoolean() {

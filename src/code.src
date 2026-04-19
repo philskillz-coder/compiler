@@ -12,9 +12,9 @@ print(b);
 print(c);###
 
 
-class Node {
+### class Node {
     var void data;
-    var void next; # Referenz auf das nächste Node-Objekt oder null
+    var void next;
 
     func void constructor(void data) {
         this.data = data;
@@ -50,3 +50,11 @@ list.prepend(20);
 list.prepend(10);
 
 list.printList();
+###
+print(5 + 3);
+print(5 + 2.11);
+print(2.1 + 2.2);
+print(2.1 + 2);
+print(5 & 3);
+print(5 & 2.2);
+print(2.2 & 2.1);

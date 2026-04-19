@@ -16,10 +16,5 @@ public interface NumericOperations {
     AbstractValue leftShift(AbstractValue other);
     AbstractValue rightShift(AbstractValue other);
 
-    AbstractValue pre_increment();
-    AbstractValue post_increment();
-    AbstractValue pre_decrement();
-    AbstractValue post_decrement();
-
     AbstractValue negate();
 }
